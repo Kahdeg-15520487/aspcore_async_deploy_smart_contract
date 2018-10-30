@@ -1,0 +1,1 @@
+dotnet run --project aspcore_async_deploy_smart_contract.Startup/aspcore_async_deploy_smart_contract.Startup.csproj

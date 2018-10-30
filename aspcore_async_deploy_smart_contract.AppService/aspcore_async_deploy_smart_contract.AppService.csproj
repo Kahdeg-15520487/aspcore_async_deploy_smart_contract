@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Nethereum.Web3" Version="2.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Dal\aspcore_async_deploy_smart_contract.Dal.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Contract\aspcore_async_deploy_smart_contract.Contract.csproj" />
+    <ProjectReference Include="..\BECInterface\BECInterface.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/aspcore_async_deploy_smart_contract.Startup/aspcore_async_deploy_smart_contract.Startup.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

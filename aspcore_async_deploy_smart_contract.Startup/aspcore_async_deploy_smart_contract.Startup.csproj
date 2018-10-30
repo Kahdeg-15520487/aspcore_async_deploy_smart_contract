@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="2.1.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Contract\aspcore_async_deploy_smart_contract.Contract.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Dal\aspcore_async_deploy_smart_contract.Dal.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.WebApi\aspcore_async_deploy_smart_contract.WebApi.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.AppService\aspcore_async_deploy_smart_contract.AppService.csproj" />
+  </ItemGroup>
+
+</Project>
