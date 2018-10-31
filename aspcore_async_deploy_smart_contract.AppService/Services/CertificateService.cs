@@ -19,6 +19,11 @@ namespace aspcore_async_deploy_smart_contract.AppService
             this.bec = bec;
         }
 
+        public async Task<string[]> BulkDeployContract(string[] hashList)
+        {
+            return await bec.BulkDeployContract(hashList);
+        }
+
         public async Task<string> DeployContract(string hash)
         {
             return await bec.DeployContract(hash);

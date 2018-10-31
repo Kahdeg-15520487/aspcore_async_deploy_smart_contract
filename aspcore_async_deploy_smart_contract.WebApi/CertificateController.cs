@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 using aspcore_async_deploy_smart_contract.Contract;
+using aspcore_async_deploy_smart_contract.Contract.DTO;
 
 namespace aspcore_async_deploy_smart_contract.WebApi
 {
@@ -27,14 +28,21 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         public async Task<IActionResult> Get(string txId)
         {
             var result = await certService.QuerryContractStatus(txId);
-            return Ok(result);
+            return Json(result);
         }
 
         [HttpPost()]
         public async Task<IActionResult> Post([FromBody]string hash)
         {
             var txId = await certService.DeployContract(hash);
-            return Ok(txId);
+            return Json(txId);
+        }
+
+        public async Task<IActionResult> PostBulk([FromBody] BulkHashRequest bulkHashRequest)
+        {
+            var txIds = await certService.BulkDeployContract(bulkHashRequest.HashList);
+
+            return Ok();
         }
     }
 }

@@ -29,37 +29,36 @@ namespace BECInterface
                    sampleData.byteCode,
                    sampleData.sender,
                    sampleData.gasLimit,
-                   //todo remove cancellation token?
                    null,
                    hash
                );
         }
 
-        public async Task BulkDeployContract(IEnumerable<string> hashList)
+        public async Task<(string hash, string txId, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList)
         {
+            List<(string hash, string txId, long runTime)> result = new List<(string hash, string txId, long runTime)>();
             IProgress<(TransactionReceipt receipt, long runtime)> progress =
-                new Progress<(TransactionReceipt receipt, long runtime)>(OnReceiptDone);
+                new Progress<(TransactionReceipt receipt, long runtime)>(async (value) =>
+                {
+                    var (receipt, runtime) = value;
+
+                    //check null receipt
+                    if (receipt is null)
+                    {
+                        Console.WriteLine("null");
+                        return;
+                    }
+
+                    var contract = web3.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
+                    var hashFunc = contract.GetFunction("hashValue");
+                    var reHashValue = await hashFunc.CallAsync<string>();
+
+                    Console.WriteLine($"hashValue:{reHashValue}, runTime:{runtime}");
+                });
 
             await ShouldBulkDeployContractWithUsingIProgress(hashList, progress);
-        }
 
-        public void OnReceiptDone((TransactionReceipt receipt, long runtime) value)
-        {
-            var (receipt, runtime) = value;
-
-            //check null receipt
-            if (receipt is null)
-            {
-                Console.WriteLine("null");
-                return;
-            }
-
-            var contract = web3.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
-            var hashFunc = contract.GetFunction("hashValue");
-            var reHashValue = hashFunc.CallAsync<string>().Result;
-
-            //V invalid operation due to xunit claiming there is no test running
-            Console.WriteLine($"hashValue:{reHashValue}, runTime:{runtime}");
+            return result.ToArray();
         }
 
         public async Task ShouldBulkDeployContractWithUsingIProgress(IEnumerable<string> hashList, IProgress<(TransactionReceipt receipt, long runtime)> progress)
@@ -67,15 +66,19 @@ namespace BECInterface
             int waitBeforeEachQuerry = 1000;
 
             IProgress<string> txIdProgress =
-                new Progress<string>(
-                    async (txId) =>
-                    {
-                        Console.WriteLine($"txId: {txId}");
-                        var value = await ShouldQuerryReceiptOnTxId(txId, waitBeforeEachQuerry);
-                        progress.Report(value);
-                    });
+                new Progress<string>(OnTransactionIdRequested(progress, waitBeforeEachQuerry));
 
             await ShouldBulkRequestTransactionId(hashList, txIdProgress);
+        }
+
+        private Action<string> OnTransactionIdRequested(IProgress<(TransactionReceipt receipt, long runtime)> progress, int waitBeforeEachQuerry)
+        {
+            return async (txId) =>
+            {
+                Console.WriteLine($"txId: {txId}");
+                var value = await ShouldQuerryReceiptOnTxId(txId, waitBeforeEachQuerry);
+                progress.Report(value);
+            };
         }
 
         public async Task ShouldBulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress)
