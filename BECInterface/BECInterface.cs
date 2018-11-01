@@ -34,9 +34,39 @@ namespace BECInterface
                );
         }
 
-        public async Task<(string hash, string txId, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList)
+        public async Task<(TransactionReceipt receipt, long runtime)> QuerryReceiptWithTxId(string txId, int waitBeforeEachQuerry = 1000)
         {
-            List<(string hash, string txId, long runTime)> result = new List<(string hash, string txId, long runTime)>();
+            var timer = new Stopwatch();
+            timer.Start();
+
+            (TransactionReceipt receipt, long runtime) result = (null, 0);
+            while (true)
+            {
+                result = await web3.Eth.Transactions.GetTransactionReceipt
+                                    .SendRequestAsync(txId)
+                                    .ContinueWith(t =>
+                                    {
+                                        //todo handle exception here
+                                        var receipt = t.Result;
+                                        var runtime = timer.ElapsedMilliseconds;
+                                        return (receipt, runtime);
+                                    });
+
+                if (result.receipt != null)
+                {
+                    timer.Stop();
+                    return result;
+                }
+                else
+                {
+                    await Task.Delay(waitBeforeEachQuerry);
+                }
+            }
+        }
+
+        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList)
+        {
+            List<(TransactionReceipt receipt, long runTime)> result = new List<(TransactionReceipt receipt, long runTime)>();
             IProgress<(TransactionReceipt receipt, long runtime)> progress =
                 new Progress<(TransactionReceipt receipt, long runtime)>(async (value) =>
                 {
@@ -56,19 +86,24 @@ namespace BECInterface
                     Console.WriteLine($"hashValue:{reHashValue}, runTime:{runtime}");
                 });
 
-            await ShouldBulkDeployContractWithUsingIProgress(hashList, progress);
+            return await BulkDeployContract(hashList, progress).ContinueWith(t =>
+            {
+                //todo: check for exception here
+                //ex: t.Status == TaskStatus.Faulted ? -> handle t.Exception.InnerExceptions
+                t.Wait();
 
-            return result.ToArray();
+                return result.ToArray();
+            });
         }
 
-        public async Task ShouldBulkDeployContractWithUsingIProgress(IEnumerable<string> hashList, IProgress<(TransactionReceipt receipt, long runtime)> progress)
+        public async Task BulkDeployContract(IEnumerable<string> hashList, IProgress<(TransactionReceipt receipt, long runtime)> progress)
         {
             int waitBeforeEachQuerry = 1000;
 
             IProgress<string> txIdProgress =
                 new Progress<string>(OnTransactionIdRequested(progress, waitBeforeEachQuerry));
 
-            await ShouldBulkRequestTransactionId(hashList, txIdProgress);
+            await BulkRequestTransactionId(hashList, txIdProgress);
         }
 
         private Action<string> OnTransactionIdRequested(IProgress<(TransactionReceipt receipt, long runtime)> progress, int waitBeforeEachQuerry)
@@ -76,71 +111,34 @@ namespace BECInterface
             return async (txId) =>
             {
                 Console.WriteLine($"txId: {txId}");
-                var value = await ShouldQuerryReceiptOnTxId(txId, waitBeforeEachQuerry);
+                var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
                 progress.Report(value);
             };
         }
 
-        public async Task ShouldBulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress)
+        public async Task BulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress)
         {
-            //var txId = await web3.Eth.DeployContract.SendRequestAsync(contractAbi, byteCode, sender, gasLimit, hashValue);
-            List<Task<string>> txIdTaskQuery = hashList.Take(1).Select(hash =>
+            List<Task<string>> txIdTaskQuery = hashList.Select(hash =>
                web3.Eth.DeployContract.SendRequestAsync(
                    sampleData.contractAbi,
                    sampleData.byteCode,
                    sampleData.sender,
                    sampleData.gasLimit,
-                   //todo remove cancellation token?
+                   //todo set cancellation token?
                    null,
                    hash
                )).ToList();
 
             while (txIdTaskQuery.Count > 0)
             {
-                try
-                {
-                    //get the first completed task in the task list
-                    var completedTask = await Task.WhenAny(txIdTaskQuery);
-                    //remove it from the task list
-                    txIdTaskQuery.Remove(completedTask);
+                //get the first completed task in the task list
+                var completedTask = await Task.WhenAny(txIdTaskQuery);
+                //remove it from the task list
+                txIdTaskQuery.Remove(completedTask);
 
-                    //the quest result is here, maybe implement some kind of INotifier
-                    var txId = await completedTask;
-                    progress.Report(txId);
-                }
-                catch (Exception ex)
-                {
-                    //todo catch and log exception
-                }
-            }
-        }
-
-        public async Task<(TransactionReceipt receipt, long runtime)> ShouldQuerryReceiptOnTxId(string txId, int waitBeforeEachQuerry = 1000)
-        {
-            var timer = new Stopwatch();
-            timer.Start();
-
-            (TransactionReceipt receipt, long runtime) result = (null, 0);
-            while (true)
-            {
-                result = await web3.Eth.Transactions.GetTransactionReceipt
-                                    .SendRequestAsync(txId)
-                                    .ContinueWith(async (t) =>
-                                    {
-                                        var receipt = await t;
-                                        var runtime = timer.ElapsedMilliseconds;
-                                        return (receipt, runtime);
-                                    }).Result;
-
-                if (result.receipt != null)
-                {
-                    timer.Stop();
-                    return result;
-                }
-                else
-                {
-                    await Task.Delay(waitBeforeEachQuerry);
-                }
+                //the querry result is here, maybe implement some kind of INotifier
+                var txId = await completedTask;
+                progress.Report(txId);
             }
         }
     }

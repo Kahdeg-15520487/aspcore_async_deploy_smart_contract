@@ -31,18 +31,18 @@ namespace aspcore_async_deploy_smart_contract.WebApi
             return Json(result);
         }
 
-        [HttpPost()]
+        [HttpPost]
         public async Task<IActionResult> Post([FromBody]string hash)
         {
             var txId = await certService.DeployContract(hash);
             return Json(txId);
         }
 
+        [HttpPost("/bulk")]
         public async Task<IActionResult> PostBulk([FromBody] BulkHashRequest bulkHashRequest)
         {
-            var txIds = await certService.BulkDeployContract(bulkHashRequest.HashList);
-
-            return Ok();
+            var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
+            return Json(result);
         }
     }
 }
