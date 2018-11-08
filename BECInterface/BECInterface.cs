@@ -50,9 +50,18 @@ namespace BECInterface
                                     .ContinueWith(t =>
                                     {
                                         //todo handle exception here
-                                        var receipt = t.Result;
-                                        var runtime = timer.ElapsedMilliseconds;
-                                        return (receipt, runtime);
+                                        //there can be rpc connection error when 
+                                        //somehow the geth instance is inaccessible
+                                        try
+                                        {
+                                            var receipt = t.Result;
+                                            var runtime = timer.ElapsedMilliseconds;
+                                            return (receipt, runtime);
+                                        }
+                                        catch (Exception)
+                                        {
+                                            throw;
+                                        }
                                     });
 
                 if (result.receipt != null)
@@ -98,7 +107,7 @@ namespace BECInterface
                 new Progress<string>(async (txId) =>
                 {
                     Console.WriteLine($"txId: {txId}");
-                    var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
+                    //var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
 
                     //this IProgress approach:
                     // after each and every txid querried, start a receipt polling task
@@ -106,6 +115,8 @@ namespace BECInterface
                 });
 
             var txIds = await BulkRequestTransactionId(hashList, txIdProgress);
+
+
 
             var reciptPollingTasks = txIds.Select(txId =>
             {
@@ -118,7 +129,7 @@ namespace BECInterface
             }
             catch (AggregateException aex)
             {
-                //todo handle exception here
+                //todo handle exception in querry polling
             }
 
             //Console.WriteLine("finished task : {0}", reciptPollingTasks.Count(v => v.IsCompleted));
@@ -131,31 +142,33 @@ namespace BECInterface
 
         public async Task<IEnumerable<string>> BulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress = null)
         {
-
-            var canToken = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             List<string> txIds = new List<string>();
-            List<Task<string>> txIdTaskQuery = hashList.Select(hash =>
-               web3.Eth.DeployContract.SendRequestAsync(
-                  sampleData.contractAbi,
-                  sampleData.byteCode,
-                  sampleData.sender,
-                  sampleData.gasLimit,
-                  hash
-              )).ToList();
-            txIdTaskQuery.ForEach(t =>
-            {
-                if (t.Status == TaskStatus.Created)
-                {
-                    t.Start();
-                }
-            });
 
-            while (txIdTaskQuery.Count > 0)
+            int CONCURRENCY_LEVEL = 5;
+            int nextIndex = 0;
+            List<Task<string>> txIdTasks = new List<Task<string>>();
+            var hashs = hashList.ToList();
+
+            while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
+            {
+                txIdTasks.Add(
+                    web3.Eth.DeployContract.SendRequestAsync(
+                      sampleData.contractAbi,
+                      sampleData.byteCode,
+                      sampleData.sender,
+                      sampleData.gasLimit,
+                      hashs[nextIndex]
+                    )
+                );
+                nextIndex++;
+            }
+
+            while (txIdTasks.Count > 0)
             {
                 //get the first completed task in the task list
-                var completedTask = await Task.WhenAny(txIdTaskQuery);
+                var completedTask = await Task.WhenAny(txIdTasks);
                 //remove it from the task list
-                txIdTaskQuery.Remove(completedTask);
+                txIdTasks.Remove(completedTask);
 
                 if (completedTask.IsFaulted)
                 {
@@ -168,6 +181,20 @@ namespace BECInterface
                 var txId = await completedTask;
                 progress?.Report(txId);
                 txIds.Add(txId);
+
+                if (nextIndex < hashs.Count)
+                {
+                    txIdTasks.Add(
+                    web3.Eth.DeployContract.SendRequestAsync(
+                      sampleData.contractAbi,
+                      sampleData.byteCode,
+                      sampleData.sender,
+                      sampleData.gasLimit,
+                      hashs[nextIndex]
+                    )
+                );
+                    nextIndex++;
+                }
             }
 
             return txIds;
