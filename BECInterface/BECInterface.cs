@@ -21,7 +21,8 @@ namespace BECInterface
             sampleData = new SampleData();
 
             var account = new ManagedAccount(sampleData.sender, sampleData.password);
-            //ClientBase.ConnectionTimeout = 1_000_000;
+            //set rpc client timeout to 1 000 000 ms
+            ClientBase.ConnectionTimeout = 1_000_000;
             web3 = new Web3(account, sampleData.web3Host);
         }
 
@@ -50,9 +51,18 @@ namespace BECInterface
                                     .ContinueWith(t =>
                                     {
                                         //todo handle exception here
-                                        var receipt = t.Result;
-                                        var runtime = timer.ElapsedMilliseconds;
-                                        return (receipt, runtime);
+                                        //there can be rpc connection error when 
+                                        //somehow the geth instance is inaccessible
+                                        try
+                                        {
+                                            var receipt = t.Result;
+                                            var runtime = timer.ElapsedMilliseconds;
+                                            return (receipt, runtime);
+                                        }
+                                        catch (Exception)
+                                        {
+                                            throw;
+                                        }
                                     });
 
                 if (result.receipt != null)
@@ -68,10 +78,8 @@ namespace BECInterface
             }
         }
 
-        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList)
+        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList, int waitBeforeEachQuerry = 1000)
         {
-            int waitBeforeEachQuerry = 1000;
-
             List<(TransactionReceipt receipt, long runTime)> result = new List<(TransactionReceipt receipt, long runTime)>();
             IProgress<(TransactionReceipt receipt, long runtime)> receiptProgress =
                 new Progress<(TransactionReceipt receipt, long runtime)>(async (value) =>
@@ -98,7 +106,7 @@ namespace BECInterface
                 new Progress<string>(async (txId) =>
                 {
                     Console.WriteLine($"txId: {txId}");
-                    var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
+                    //var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
 
                     //this IProgress approach:
                     // after each and every txid querried, start a receipt polling task
@@ -107,9 +115,11 @@ namespace BECInterface
 
             var txIds = await BulkRequestTransactionId(hashList, txIdProgress);
 
+
+
             var reciptPollingTasks = txIds.Select(txId =>
             {
-                return QuerryReceiptWithTxId(txId, progress: receiptProgress);
+                return QuerryReceiptWithTxId(txId, waitBeforeEachQuerry, progress: receiptProgress);
             }).ToArray();
 
             try
@@ -118,7 +128,7 @@ namespace BECInterface
             }
             catch (AggregateException aex)
             {
-                //todo handle exception here
+                //todo handle exception in querry polling
             }
 
             //Console.WriteLine("finished task : {0}", reciptPollingTasks.Count(v => v.IsCompleted));
@@ -131,43 +141,70 @@ namespace BECInterface
 
         public async Task<IEnumerable<string>> BulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress = null)
         {
-
-            var canToken = new CancellationTokenSource(TimeSpan.FromSeconds(20));
             List<string> txIds = new List<string>();
-            List<Task<string>> txIdTaskQuery = hashList.Select(hash =>
-               web3.Eth.DeployContract.SendRequestAsync(
-                  sampleData.contractAbi,
-                  sampleData.byteCode,
-                  sampleData.sender,
-                  sampleData.gasLimit,
-                  hash
-              )).ToList();
-            txIdTaskQuery.ForEach(t =>
-            {
-                if (t.Status == TaskStatus.Created)
-                {
-                    t.Start();
-                }
-            });
 
-            while (txIdTaskQuery.Count > 0)
+            int CONCURRENCY_LEVEL = 5;
+            int nextIndex = 0;
+            List<Task<string>> txIdTasks = new List<Task<string>>();
+            var hashs = hashList.ToList();
+
+            Dictionary<int, string> taskHashlist = new Dictionary<int, string>();
+
+            while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
+            {
+                var t = web3.Eth.DeployContract.SendRequestAsync(
+                      sampleData.contractAbi,
+                      sampleData.byteCode,
+                      sampleData.sender,
+                      sampleData.gasLimit,
+                      hashs[nextIndex]
+                    );
+                taskHashlist.Add(t.Id, hashs[nextIndex]);
+
+                txIdTasks.Add(t);
+                nextIndex++;
+            }
+
+            while (txIdTasks.Count > 0)
             {
                 //get the first completed task in the task list
-                var completedTask = await Task.WhenAny(txIdTaskQuery);
+                var completedTask = await Task.WhenAny(txIdTasks);
                 //remove it from the task list
-                txIdTaskQuery.Remove(completedTask);
+                txIdTasks.Remove(completedTask);
+                var hash = taskHashlist[completedTask.Id];
+                taskHashlist.Remove(completedTask.Id);
 
                 if (completedTask.IsFaulted)
                 {
                     Console.WriteLine("faulted task's id: {0}", completedTask.Id);
-                    Console.WriteLine("Exception: {0}", completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}"));
-                    continue;
+                    Console.WriteLine("faulted task's hash: {0}", hash);
+                    Console.WriteLine("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}")));
+                    //todo report errored hash
+                    //maybe try it again later?
+                }
+                else
+                {
+                    //the querry result is here, maybe implement some kind of INotifier
+                    var txId = await completedTask;
+                    progress?.Report(txId);
+                    txIds.Add(txId);
                 }
 
-                //the querry result is here, maybe implement some kind of INotifier
-                var txId = await completedTask;
-                progress?.Report(txId);
-                txIds.Add(txId);
+                //queue another task
+                if (nextIndex < hashs.Count)
+                {
+                    var t = web3.Eth.DeployContract.SendRequestAsync(
+                          sampleData.contractAbi,
+                          sampleData.byteCode,
+                          sampleData.sender,
+                          sampleData.gasLimit,
+                          hashs[nextIndex]
+                        );
+                    taskHashlist.Add(t.Id, hashs[nextIndex]);
+
+                    txIdTasks.Add(t);
+                    nextIndex++;
+                }
             }
 
             return txIds;
