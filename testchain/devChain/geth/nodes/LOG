@@ -1,6 +1,0 @@
-=============== Nov 8, 2018 (+07) ===============
-09:29:42.376317 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-09:29:42.382337 db@open opening
-09:29:42.385342 version@stat F·[] S·0B[] Sc·[]
-09:29:42.386345 db@janitor F·2 G·0
-09:29:42.387347 db@open done T·4.0078ms

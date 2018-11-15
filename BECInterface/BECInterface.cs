@@ -21,7 +21,8 @@ namespace BECInterface
             sampleData = new SampleData();
 
             var account = new ManagedAccount(sampleData.sender, sampleData.password);
-            //ClientBase.ConnectionTimeout = 1_000_000;
+            //set rpc client timeout to 1 000 000 ms
+            ClientBase.ConnectionTimeout = 1_000_000;
             web3 = new Web3(account, sampleData.web3Host);
         }
 
@@ -77,10 +78,8 @@ namespace BECInterface
             }
         }
 
-        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList)
+        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList, int waitBeforeEachQuerry = 1000)
         {
-            int waitBeforeEachQuerry = 1000;
-
             List<(TransactionReceipt receipt, long runTime)> result = new List<(TransactionReceipt receipt, long runTime)>();
             IProgress<(TransactionReceipt receipt, long runtime)> receiptProgress =
                 new Progress<(TransactionReceipt receipt, long runtime)>(async (value) =>
@@ -120,7 +119,7 @@ namespace BECInterface
 
             var reciptPollingTasks = txIds.Select(txId =>
             {
-                return QuerryReceiptWithTxId(txId, progress: receiptProgress);
+                return QuerryReceiptWithTxId(txId, waitBeforeEachQuerry, progress: receiptProgress);
             }).ToArray();
 
             try
@@ -149,17 +148,20 @@ namespace BECInterface
             List<Task<string>> txIdTasks = new List<Task<string>>();
             var hashs = hashList.ToList();
 
+            Dictionary<int, string> taskHashlist = new Dictionary<int, string>();
+
             while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
             {
-                txIdTasks.Add(
-                    web3.Eth.DeployContract.SendRequestAsync(
+                var t = web3.Eth.DeployContract.SendRequestAsync(
                       sampleData.contractAbi,
                       sampleData.byteCode,
                       sampleData.sender,
                       sampleData.gasLimit,
                       hashs[nextIndex]
-                    )
-                );
+                    );
+                taskHashlist.Add(t.Id, hashs[nextIndex]);
+
+                txIdTasks.Add(t);
                 nextIndex++;
             }
 
@@ -169,30 +171,38 @@ namespace BECInterface
                 var completedTask = await Task.WhenAny(txIdTasks);
                 //remove it from the task list
                 txIdTasks.Remove(completedTask);
+                var hash = taskHashlist[completedTask.Id];
+                taskHashlist.Remove(completedTask.Id);
 
                 if (completedTask.IsFaulted)
                 {
                     Console.WriteLine("faulted task's id: {0}", completedTask.Id);
-                    Console.WriteLine("Exception: {0}", completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}"));
-                    continue;
+                    Console.WriteLine("faulted task's hash: {0}", hash);
+                    Console.WriteLine("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}")));
+                    //todo report errored hash
+                    //maybe try it again later?
+                }
+                else
+                {
+                    //the querry result is here, maybe implement some kind of INotifier
+                    var txId = await completedTask;
+                    progress?.Report(txId);
+                    txIds.Add(txId);
                 }
 
-                //the querry result is here, maybe implement some kind of INotifier
-                var txId = await completedTask;
-                progress?.Report(txId);
-                txIds.Add(txId);
-
+                //queue another task
                 if (nextIndex < hashs.Count)
                 {
-                    txIdTasks.Add(
-                    web3.Eth.DeployContract.SendRequestAsync(
-                      sampleData.contractAbi,
-                      sampleData.byteCode,
-                      sampleData.sender,
-                      sampleData.gasLimit,
-                      hashs[nextIndex]
-                    )
-                );
+                    var t = web3.Eth.DeployContract.SendRequestAsync(
+                          sampleData.contractAbi,
+                          sampleData.byteCode,
+                          sampleData.sender,
+                          sampleData.gasLimit,
+                          hashs[nextIndex]
+                        );
+                    taskHashlist.Add(t.Id, hashs[nextIndex]);
+
+                    txIdTasks.Add(t);
                     nextIndex++;
                 }
             }
