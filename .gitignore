@@ -339,3 +339,6 @@ ASALocalRun/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# eth dev chain
+testchain/devChain/*
