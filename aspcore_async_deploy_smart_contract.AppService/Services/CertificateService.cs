@@ -9,16 +9,22 @@ using aspcore_async_deploy_smart_contract.Contract.DTO;
 using BECInterface;
 using System.Linq;
 using System.Collections.Generic;
+using aspcore_async_deploy_smart_contract.Dal;
+using aspcore_async_deploy_smart_contract.Dal.Entities;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
     public class CertificateService : ICertificateService
     {
         private readonly BECInterface.BECInterface bec;
+        private readonly IBackgroundTaskQueue<string> taskQueue;
+        private readonly BECDbContext _context;
 
-        public CertificateService(BECInterface.BECInterface bec)
+        public CertificateService(BECInterface.BECInterface bec, IBackgroundTaskQueue<string> taskQueue, BECDbContext context)
         {
             this.bec = bec;
+            this.taskQueue = taskQueue;
+            _context = context;
         }
 
         public async Task<IEnumerable<ReceiptQuerry>> BulkDeployContract(string[] hashList)
@@ -40,6 +46,28 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     DeploymentTime = runtime
                 };
             });
+        }
+
+        public void BulkDeployContractWithBackgroundTask(string[] hashs)
+        {
+            foreach (var hash in hashs)
+            {
+                taskQueue.QueueBackgroundWorkItem(async (ct) =>
+                {
+                    var task = bec.DeployContract(hash);
+                    _context.Certificates.Add(new Certificate()
+                    {
+                        Id = Guid.NewGuid(),
+                        TaskId = task.Id,
+                        DeployStart = DateTime.Now,
+                        DeployDone = default(DateTime),
+                        Hash = hash,
+                        Status = DeployStatus.Pending
+                    });
+                    return await task;
+                });
+            }
+            return;
         }
 
         public async Task<string> DeployContract(string hash)

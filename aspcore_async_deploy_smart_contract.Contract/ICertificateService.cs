@@ -11,5 +11,6 @@ namespace aspcore_async_deploy_smart_contract.Contract
         Task<string> DeployContract(string hash);
         Task<ReceiptQuerry> QuerryContractStatus(string txId);
         Task<IEnumerable<ReceiptQuerry>> BulkDeployContract(string[] hashList);
+        void BulkDeployContractWithBackgroundTask(string[] hashList);
     }
 }

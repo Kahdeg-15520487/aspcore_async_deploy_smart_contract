@@ -13,6 +13,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using aspcore_async_deploy_smart_contract.AppService;
+using aspcore_async_deploy_smart_contract.Dal;
+using Microsoft.EntityFrameworkCore;
 
 namespace aspcore_async_deploy_smart_contract.Startup
 {
@@ -38,10 +40,22 @@ namespace aspcore_async_deploy_smart_contract.Startup
                         .AllowCredentials());
             });
 
+            services.AddDbContext<BECDbContext>(
+                options => options.UseSqlServer
+                        (
+                            Configuration["ConnectionStrings:DefaultConnection"]
+                        )
+                );
+
             services.AddService();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
             .AddApplicationPart(Assembly.Load("aspcore_async_deploy_smart_contract.WebApi"));
+
+            //foreach (var service in services)
+            //{
+            //    Console.WriteLine("Loaded {0} with {1}", service.ServiceType.FullName, service.ImplementationType?.FullName);
+            //}
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

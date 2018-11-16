@@ -23,11 +23,20 @@ namespace aspcore_async_deploy_smart_contract.WebApi
             certService = certificateService;
         }
 
+        //[HttpPost]
+        //public async Task<IActionResult> PostBulk([FromBody] BulkHashRequest bulkHashRequest)
+        //{
+        //    var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
+        //    return Json(result);
+        //}
+
         [HttpPost]
         public async Task<IActionResult> PostBulk([FromBody] BulkHashRequest bulkHashRequest)
         {
-            var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
-            return Json(result);
+            //var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
+            //return Json(result);
+            certService.BulkDeployContractWithBackgroundTask(bulkHashRequest.HashList);
+            return Ok();
         }
     }
 }

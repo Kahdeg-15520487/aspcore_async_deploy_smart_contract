@@ -10,7 +10,9 @@ namespace aspcore_async_deploy_smart_contract.AppService
     {
         public static IServiceCollection AddService(this IServiceCollection services)
         {
-            services.AddTransient<ICertificateService,CertificateService>();
+            services.AddHostedService<BackgroundBECService>();
+            services.AddSingleton<IBackgroundTaskQueue<string>, BackgroundTaskQueue<string>>();
+            services.AddTransient<ICertificateService, CertificateService>();
             services.AddSingleton<BECInterface.BECInterface>();
             return services;
         }
