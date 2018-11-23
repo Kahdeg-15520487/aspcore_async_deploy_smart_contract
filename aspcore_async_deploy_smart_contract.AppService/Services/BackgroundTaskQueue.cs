@@ -12,6 +12,8 @@ namespace aspcore_async_deploy_smart_contract.AppService
         private ConcurrentQueue<Func<CancellationToken, Task<T>>> _workItems;
         private SemaphoreSlim _signal;
 
+        public int Count => _workItems.Count;
+
         public BackgroundTaskQueue()
         {
             _workItems = new ConcurrentQueue<Func<CancellationToken, Task<T>>>();

@@ -32,6 +32,8 @@ namespace aspcore_async_deploy_smart_contract.Dal.Migrations
 
                     b.Property<string>("Messasge");
 
+                    b.Property<DateTime>("QuerryDone");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)

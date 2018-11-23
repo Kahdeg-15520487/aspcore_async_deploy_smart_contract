@@ -25,10 +25,15 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         }
 
         [HttpGet("{txId}")]
-        public async Task<IActionResult> Get(string txId)
+        public CertificateDTO Get(string txId)
         {
-            var result = await certService.QuerryContractStatus(txId);
-            return Json(result);
+            return certService.GetCertificate(txId);
+        }
+
+        [HttpGet]
+        public IEnumerable<CertificateDTO> Gets()
+        {
+            return certService.GetCertificates();
         }
 
         [HttpPost]

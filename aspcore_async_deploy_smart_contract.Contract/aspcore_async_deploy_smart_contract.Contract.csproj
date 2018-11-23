@@ -4,4 +4,8 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Dal\aspcore_async_deploy_smart_contract.Dal.csproj" />
+  </ItemGroup>
+
 </Project>

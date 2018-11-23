@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 
 using aspcore_async_deploy_smart_contract.Contract;
@@ -17,14 +18,36 @@ namespace aspcore_async_deploy_smart_contract.AppService
     public class CertificateService : ICertificateService
     {
         private readonly BECInterface.BECInterface bec;
-        private readonly IBackgroundTaskQueue<string> taskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue;
         private readonly BECDbContext _context;
+        private readonly ILogger _logger;
+        private readonly IMapper mapper;
 
-        public CertificateService(BECInterface.BECInterface bec, IBackgroundTaskQueue<string> taskQueue, BECDbContext context)
+        public CertificateService(BECInterface.BECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
             _context = context;
+            _logger = loggerFactory.CreateLogger<CertificateService>();
+            this.mapper = mapper;
+        }
+
+        public IEnumerable<CertificateDTO> GetCertificates()
+        {
+            var tt = _context.Certificates.ToList();
+            return tt.Select(c => mapper.Map(c));
+        }
+
+        public CertificateDTO GetCertificate(string txId)
+        {
+            var certificate = _context.Certificates.FirstOrDefault(cert => cert.Id.Equals(txId));
+
+            if (certificate == null)
+            {
+                throw new KeyNotFoundException(txId);
+            }
+
+            return mapper.Map(certificate);
         }
 
         public async Task<IEnumerable<ReceiptQuerry>> BulkDeployContract(string[] hashList)
@@ -52,19 +75,22 @@ namespace aspcore_async_deploy_smart_contract.AppService
         {
             foreach (var hash in hashs)
             {
-                taskQueue.QueueBackgroundWorkItem(async (ct) =>
+                var certEntity = new Certificate()
                 {
-                    var task = bec.DeployContract(hash);
-                    _context.Certificates.Add(new Certificate()
-                    {
-                        Id = Guid.NewGuid(),
-                        TaskId = task.Id,
-                        DeployStart = DateTime.Now,
-                        DeployDone = default(DateTime),
-                        Hash = hash,
-                        Status = DeployStatus.Pending
-                    });
-                    return await task;
+                    Id = Guid.NewGuid(),
+                    DeployStart = DateTime.UtcNow,
+                    DeployDone = default(DateTime),
+                    Hash = hash,
+                    Status = DeployStatus.Pending
+                };
+                _logger.LogInformation("Id: {0}, TaskId: {1}, hash: {2}", certEntity.Id, certEntity.TaskId, certEntity.Hash);
+
+                _context.Certificates.Add(certEntity);
+                _context.SaveChanges();
+
+                taskQueue.QueueBackgroundWorkItem((ct) =>
+                {
+                    return bec.DeployContract(hash).ContinueWith(txid => (certEntity.Id, txid));
                 });
             }
             return;

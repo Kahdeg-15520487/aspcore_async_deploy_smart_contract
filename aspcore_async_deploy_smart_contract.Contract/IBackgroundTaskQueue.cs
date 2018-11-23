@@ -11,5 +11,7 @@ namespace aspcore_async_deploy_smart_contract.Contract
         void QueueBackgroundWorkItem(Func<CancellationToken, Task<T>> workItem);
 
         Task<Func<CancellationToken, Task<T>>> DequeueAsync(CancellationToken cancellationToken);
+
+        int Count { get; }
     }
 }

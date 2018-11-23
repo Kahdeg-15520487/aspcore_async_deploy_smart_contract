@@ -38,6 +38,26 @@ namespace BECInterface
                );
         }
 
+        public async Task<TransactionReceipt> QuerryReceipt(string txId, int waitBeforeEachQuerry = 1000)
+        {
+            TransactionReceipt result = default(TransactionReceipt);
+            while (true)
+            {
+                result = await web3.Eth.Transactions.GetTransactionReceipt
+                                    .SendRequestAsync(txId);
+
+                if (result != null)
+                {
+                    return result;
+                }
+                else
+                {
+                    await Task.Delay(waitBeforeEachQuerry);
+                }
+            }
+        }
+
+        [Obsolete]
         public async Task<(TransactionReceipt receipt, long runtime)> QuerryReceiptWithTxId(string txId, int waitBeforeEachQuerry = 1000, IProgress<(TransactionReceipt receipt, long runtime)> progress = null)
         {
             var timer = new Stopwatch();
@@ -78,6 +98,7 @@ namespace BECInterface
             }
         }
 
+        [Obsolete]
         public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList, int waitBeforeEachQuerry = 1000)
         {
             List<(TransactionReceipt receipt, long runTime)> result = new List<(TransactionReceipt receipt, long runTime)>();
@@ -139,6 +160,7 @@ namespace BECInterface
             return result.ToArray();
         }
 
+        [Obsolete]
         public async Task<IEnumerable<string>> BulkRequestTransactionId(IEnumerable<string> hashList, IProgress<string> progress = null)
         {
             List<string> txIds = new List<string>();
