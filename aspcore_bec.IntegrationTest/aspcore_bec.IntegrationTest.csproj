@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.AppServiceMock\aspcore_async_deploy_smart_contract.AppServiceMock.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.AppService\aspcore_async_deploy_smart_contract.AppService.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Contract\aspcore_async_deploy_smart_contract.Contract.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Dal\aspcore_async_deploy_smart_contract.Dal.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Startup\aspcore_async_deploy_smart_contract.Startup.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.WebApi\aspcore_async_deploy_smart_contract.WebApi.csproj" />
+    <ProjectReference Include="..\BECInterface\BECInterface.csproj" />
+  </ItemGroup>
+
+</Project>

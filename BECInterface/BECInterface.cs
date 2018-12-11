@@ -9,9 +9,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using aspcore_async_deploy_smart_contract.Contract.Service;
+
 namespace BECInterface
 {
-    public class BECInterface
+    public class BECInterface : IBECInterface<TransactionReceipt>
     {
         public readonly Web3 web3;
         public readonly SampleData sampleData;

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using aspcore_async_deploy_smart_contract.Contract;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
+using aspcore_async_deploy_smart_contract.Contract.Service;
 
 namespace aspcore_async_deploy_smart_contract.WebApi
 {
@@ -39,8 +40,9 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]string hash)
         {
-            var txId = await certService.DeployContract(hash);
-            return Json(txId);
+            //var txId = await certService.DeployContract(hash);
+            //return Json(txId);
+            return Ok();
         }
     }
 }

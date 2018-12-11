@@ -13,27 +13,39 @@ using Nethereum.RPC.Eth.DTOs;
 using aspcore_async_deploy_smart_contract.Contract;
 using aspcore_async_deploy_smart_contract.Dal;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
+using aspcore_async_deploy_smart_contract.Contract.Service;
+using aspcore_async_deploy_smart_contract.Contract.Repository;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
-    class BackgroundTxIdDeployService : BackgroundService
+    public class BackgroundTxIdDeployService : BackgroundService
     {
-        private readonly ILogger _logger;
+        private readonly ILoggerService _logger;
 
         private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> DeployContractTaskQueue;
         private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> QuerryContractTaskQueue;
 
-        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IScopeService _scopeService;
 
-        private readonly BECInterface.BECInterface _bec;
+        private readonly IBECInterface<TransactionReceipt> _bec;
 
-        public BackgroundTxIdDeployService(BECInterface.BECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory)
+        public BackgroundTxIdDeployService(IBECInterface<TransactionReceipt> bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             _bec = bec;
             DeployContractTaskQueue = deployContractTaskQueue;
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundTxIdDeployService>();
-            _scopeFactory = scopeFactory;
+            _scopeService = scopeService;
+        }
+
+        public override Task StartAsync(CancellationToken cancellationToken)
+        {
+            return base.StartAsync(cancellationToken);
+        }
+
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            return base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -100,20 +112,6 @@ namespace aspcore_async_deploy_smart_contract.AppService
                         TaskTable.Add(task.task.Id, task.id);
                         nextIndex++;
                     }
-
-                    //try
-                    //{
-                    //    var txId = await completedTask;
-                    //    _logger.LogInformation($"txId: {txId}");
-                    //    Console.WriteLine($"txId: {txId}");
-                    //    UpdateCertificateStatus(task.Id, txId);
-                    //}
-                    //catch (Exception ex)
-                    //{
-                    //    _logger.LogError(ex, $"Error occurred executing {nameof(workItem)}.");
-                    //    Console.WriteLine(ex.Message);
-                    //    Console.WriteLine($"Error occurred executing {nameof(workItem)}.");
-                    //}
                 }
             }
 
@@ -122,53 +120,35 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         private void ErrorCertificateStatue(Guid id, string message)
         {
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                using (var _context = scope.ServiceProvider.GetRequiredService<BECDbContext>())
-                {
-                    var certificate = _context.Certificates.FirstOrDefault(cert => cert.Id.Equals(id));
-
-                    certificate.Status = DeployStatus.ErrorInDeploy;
-                    certificate.Messasge = message;
-                    _context.SaveChanges();
-                    _logger.LogError("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
-                }
-            }
+            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
+            var certificate = repo.GetById(id);
+            certificate.Status = DeployStatus.ErrorInDeploy;
+            certificate.Messasge = message;
+            repo.Update(certificate);
+            repo.SaveChanges();
+            _logger.LogDebug("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
+            _scopeService.Dispose();
         }
 
         private Certificate GetCertificate(Guid id)
         {
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                using (var _context = scope.ServiceProvider.GetRequiredService<BECDbContext>())
-                {
-                    var certificate = _context.Certificates.FirstOrDefault(cert => cert.Id.Equals(id));
-
-                    return certificate;
-                }
-            }
+            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
+            var cert = repo.GetById(id);
+            _scopeService.Dispose();
+            return cert;
         }
 
         private void FinishCertificateStatus(Guid id, string txId)
         {
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                using (var _context = scope.ServiceProvider.GetRequiredService<BECDbContext>())
-                {
-                    var certificate = _context.Certificates.FirstOrDefault(cert => cert.Id.Equals(id));
-
-                    if (certificate == null)
-                    {
-                        return;
-                    }
-
-                    certificate.TransactionId = txId;
-                    certificate.Status = DeployStatus.DoneDeploying;
-                    certificate.DeployDone = DateTime.UtcNow;
-                    _context.SaveChanges();
-                    _logger.LogInformation("id: {0}, txId: {1}", certificate.Id, txId);
-                }
-            }
+            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
+            var certificate = repo.GetById(id);
+            certificate.TransactionId = txId;
+            certificate.Status = DeployStatus.DoneDeploying;
+            certificate.DeployDone = DateTime.UtcNow;
+            repo.Update(certificate);
+            repo.SaveChanges();
+            _logger.LogInformation("id: {0}, txId: {1}", certificate.Id, txId);
+            _scopeService.Dispose();
         }
     }
 }

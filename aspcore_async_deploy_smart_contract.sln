@@ -17,7 +17,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspcore_async_deploy_smart_
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BECInterface", "BECInterface\BECInterface.csproj", "{211F389A-B1F8-4541-8607-61D8A6A24E62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspcore_bec.testProject", "aspcore_bec.testProject\aspcore_bec.testProject.csproj", "{072C6555-D7E9-4E43-A2B9-D89156926272}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aspcore_bec.UnitTest", "aspcore_bec.testProject\aspcore_bec.UnitTest.csproj", "{072C6555-D7E9-4E43-A2B9-D89156926272}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{3D5D020C-60F4-49F7-B705-6CECB8EAE98B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aspcore_bec.IntegrationTest", "aspcore_bec.IntegrationTest\aspcore_bec.IntegrationTest.csproj", "{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -125,9 +129,25 @@ Global
 		{072C6555-D7E9-4E43-A2B9-D89156926272}.Release|x64.Build.0 = Release|Any CPU
 		{072C6555-D7E9-4E43-A2B9-D89156926272}.Release|x86.ActiveCfg = Release|Any CPU
 		{072C6555-D7E9-4E43-A2B9-D89156926272}.Release|x86.Build.0 = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|x64.Build.0 = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Debug|x86.Build.0 = Debug|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|x64.ActiveCfg = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|x64.Build.0 = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|x86.ActiveCfg = Release|Any CPU
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{072C6555-D7E9-4E43-A2B9-D89156926272} = {3D5D020C-60F4-49F7-B705-6CECB8EAE98B}
+		{65AB5DB2-0511-4FC4-8563-FA9E2D50E4D7} = {3D5D020C-60F4-49F7-B705-6CECB8EAE98B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AC32F8A0-8DC0-4C82-8B7B-328EC142FE5B}

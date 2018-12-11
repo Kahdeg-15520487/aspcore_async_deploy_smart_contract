@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using aspcore_async_deploy_smart_contract.Contract;
+using aspcore_async_deploy_smart_contract.Contract.Service;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
