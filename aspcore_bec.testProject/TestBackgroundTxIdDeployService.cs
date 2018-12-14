@@ -31,13 +31,17 @@ namespace aspcore_bec.UnitTest
         [ClassData(typeof(HashTestData))]
         public async void TestInsertRepoAsync(string[] hashs)
         {
+            const string accountAddr = "";
+            const string password = "";
+            const string contractAddr = "";
+
             var mockRepo = new Mock<IRepository<Certificate>>();
             var mockLogger = new Mock<ILoggerService>();
             var mockLoggerFactory = new Mock<ILoggerFactoryService>();
             var mockTxIdQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<string> task)>>();
-            var mockQuerryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)>>();
+            var mockQuerryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<string> task)>>();
             var mockScopeService = new Mock<IScopeService>();
-            var mockBECInterface = new Mock<IBECInterface<TransactionReceipt>>();
+            var mockBECInterface = new Mock<IBECInterface>();
 
             mockLogger.Setup(l => l.LogInformation(It.IsAny<string>(), It.IsAny<object[]>()))
                     .Callback((string s, object[] obj) => output.WriteLine($"inf: {s}", obj));
@@ -60,9 +64,9 @@ namespace aspcore_bec.UnitTest
                         .Returns(() => txidQueue.Count);
             var txidQueueObj = mockTxIdQueue.Object;
 
-            Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionReceipt> task)>>> querryQueue = new Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionReceipt> task)>>>();
-            mockQuerryQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<TransactionReceipt> task)>>>()))
-                        .Callback((Func<CancellationToken, Task<(Guid id, Task<TransactionReceipt> task)>> f) => querryQueue.Enqueue(f));
+            Queue<Func<CancellationToken, Task<(Guid id, Task<string> task)>>> querryQueue = new Queue<Func<CancellationToken, Task<(Guid id, Task<string> task)>>>();
+            mockQuerryQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<string> task)>>>()))
+                        .Callback((Func<CancellationToken, Task<(Guid id, Task<string> task)>> f) => querryQueue.Enqueue(f));
             mockQuerryQueue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>()))
                         .ReturnsAsync(() => querryQueue.Dequeue());
             mockQuerryQueue.Setup(q => q.Count)
@@ -98,8 +102,8 @@ namespace aspcore_bec.UnitTest
                             .Returns(repoObj);
             var scopeObj = mockScopeService.Object;
 
-            mockBECInterface.Setup(b => b.DeployContract(It.IsAny<string>()))
-                            .Returns(async (string hash) =>
+            mockBECInterface.Setup(b => b.DeployContract(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                            .Returns(async (string accAddr, string pw, string contrAddr, string hash) =>
                             {
                                 await Task.Delay(1000);
                                 return $"lala{hash}";
@@ -108,7 +112,7 @@ namespace aspcore_bec.UnitTest
                             .Returns(async (string txid, int delay) =>
                             {
                                 await Task.Delay(delay);
-                                return new TransactionReceipt() { TransactionHash = $"lala{txid}" };
+                                return $"lala{txid}";
                             });
             var becObj = mockBECInterface.Object;
 
@@ -131,11 +135,11 @@ namespace aspcore_bec.UnitTest
 
                 txidQueueObj.QueueBackgroundWorkItem((ct) =>
                 {
-                    return becObj.DeployContract(hash).ContinueWith(txid =>
-                    {
-                        taskDoneCount++;
-                        return (certEntity.Id, txid);
-                    });
+                    return becObj.DeployContract(accountAddr, password, contractAddr, hash).ContinueWith(txid =>
+                       {
+                           taskDoneCount++;
+                           return (certEntity.Id, txid);
+                       });
                 });
             }
 

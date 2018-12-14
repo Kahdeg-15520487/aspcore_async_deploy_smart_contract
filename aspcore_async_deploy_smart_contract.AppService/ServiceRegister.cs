@@ -9,6 +9,7 @@ using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.AppService.Repository;
+using BECInterface;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
@@ -20,15 +21,18 @@ namespace aspcore_async_deploy_smart_contract.AppService
             services.AddHostedService<BackgroundReceiptPollingService>();
 
             services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<string> task)>, BackgroundTaskQueue<(Guid id, Task<string> task)>>();
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)>, BackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)>>();
+            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<string> task)>, BackgroundTaskQueue<(Guid id, Task<string> task)>>();
 
             services.AddTransient<IMapper, Mapper>();
             services.AddTransient<ICertificateService, CertificateService>();
-            services.AddSingleton<IBECInterface<TransactionReceipt>, BECInterface.BECInterface>();
+            services.AddSingleton<IBECInterface, BECInterface.BECInterface>();
 
             services.AddTransient<IRepository<Certificate>, CertificateRepository>();
             services.AddTransient<IScopeService, ScopeService>();
             services.AddSingleton<ILoggerFactoryService, LoggerFactoryService>();
+
+            services.AddBECInterfaceService();
+
             return services;
         }
     }

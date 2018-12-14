@@ -22,11 +22,11 @@ namespace aspcore_async_deploy_smart_contract.AppService
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
-        public BackgroundReceiptPollingService(IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundReceiptPollingService(IBackgroundTaskQueue<(Guid id, Task<string> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptPollingService>();
@@ -44,7 +44,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 int CONCURRENCY_LEVEL = 5;
                 //book keeping variable
                 int nextIndex = 0;
-                List<Task<TransactionReceipt>> currentlyRunningTasks = new List<Task<TransactionReceipt>>();
+                List<Task<string>> currentlyRunningTasks = new List<Task<string>>();
                 Dictionary<int, Guid> TaskTable = new Dictionary<int, Guid>();
 
                 //setup parallel task to run
@@ -117,7 +117,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
             return cert;
         }
 
-        private void FinishCertificateStatusWithReceipt(Guid id, TransactionReceipt receipt)
+        private void FinishCertificateStatusWithReceipt(Guid id, string receipt)
         {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
             var certificate = repo.GetById(id);

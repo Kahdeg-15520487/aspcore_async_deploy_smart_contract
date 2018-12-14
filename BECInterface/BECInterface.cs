@@ -10,14 +10,17 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using aspcore_async_deploy_smart_contract.Contract.Service;
+using BECInterface.Contracts;
 
 namespace BECInterface
 {
-    public class BECInterface : IBECInterface<TransactionReceipt>
+    public class BECInterface : IBECInterface
     {
+        const string hostAddress = "http://10.8.0.1:8545/";
+
         public readonly Web3 web3;
         public readonly SampleData sampleData;
-
+        public IDictionary<string, ManagedAccount> ethereumAccounts;
         public BECInterface()
         {
             sampleData = new SampleData();
@@ -28,27 +31,37 @@ namespace BECInterface
             web3 = new Web3(account, sampleData.web3Host);
         }
 
-        public async Task<string> DeployContract(string hash)
+        public async Task<string> DeployContract(string accountAddress, string pw, string mastercontractaddr, string hash)
         {
-            return await web3.Eth.DeployContract.SendRequestAsync(
-                   sampleData.contractAbi,
-                   sampleData.byteCode,
-                   sampleData.sender,
-                   sampleData.gasLimit,
-                   null,
-                   hash
-               );
+            ManagedAccount account = new ManagedAccount(accountAddress, pw);
+            Web3 w3conn = new Web3(hostAddress);
+            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, account, mastercontractaddr);
+            var firstbyte = "0x" + hash.Substring(0, 64);
+            var lastbyte = "0x" + hash.Substring(64, 64);
+
+            return await contract.SetIndividualCertificate("lala", firstbyte, lastbyte, "0x0800", 2_000_000_000);
+            //return await web3.Eth.DeployContract.SendRequestAsync(
+            //       sampleData.contractAbi,
+            //       sampleData.byteCode,
+            //       sampleData.sender,
+            //       sampleData.gasLimit,
+            //       null,
+            //       hash
+            //   );
         }
 
-        public async Task<TransactionReceipt> QuerryReceipt(string txId, int waitBeforeEachQuerry = 1000)
+        public async Task<string> QuerryReceipt(string txId, int waitBeforeEachQuerry = 1000)
         {
-            TransactionReceipt result = default(TransactionReceipt);
+            string result = null;
+            TransactionReceipt receipt = default(TransactionReceipt);
             while (true)
             {
-                result = await web3.Eth.Transactions.GetTransactionReceipt
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId);
 
-                if (result != null)
+                var logs = receipt.Logs;
+
+                if (!string.IsNullOrEmpty(result))
                 {
                     return result;
                 }

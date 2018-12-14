@@ -23,13 +23,13 @@ namespace aspcore_async_deploy_smart_contract.AppService
         private readonly ILoggerService _logger;
 
         private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> DeployContractTaskQueue;
-        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
-        private readonly IBECInterface<TransactionReceipt> _bec;
+        private readonly IBECInterface _bec;
 
-        public BackgroundTxIdDeployService(IBECInterface<TransactionReceipt> bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<TransactionReceipt> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<string> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             _bec = bec;
             DeployContractTaskQueue = deployContractTaskQueue;
@@ -84,10 +84,10 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     {
                         _logger.LogError("faulted task's id: {0}", completedTask.Id);
                         _logger.LogError("faulted task's hash: {0}", GetCertificate(id));
-                        _logger.LogError("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}")));
+                        _logger.LogError("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
                         //todo report errored hash
                         //maybe try it again later?
-                        ErrorCertificateStatue(id, string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}")));
+                        ErrorCertificateStatue(id, string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
                     }
                     else
                     {

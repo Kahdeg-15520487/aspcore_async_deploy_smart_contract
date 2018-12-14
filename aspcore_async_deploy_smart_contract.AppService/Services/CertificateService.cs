@@ -15,7 +15,14 @@ namespace aspcore_async_deploy_smart_contract.AppService
 {
     public class CertificateService : ICertificateService
     {
-        private readonly IBECInterface<TransactionReceipt> bec;
+        #region hardcode data
+        const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
+        const string password = "rosen";
+        const string contractAddr = "0x1A7048CCA5224b5fe68036a8aE5189BcF76f7C09";
+        #endregion
+
+
+        private readonly IBECInterface bec;
 
         private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue;
 
@@ -23,7 +30,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         private readonly ILogger _logger;
         private readonly IMapper mapper;
 
-        public CertificateService(IBECInterface<TransactionReceipt> bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
+        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
@@ -56,7 +63,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         //    return result.Select(r =>
         //    {
-        //        (Nethereum.RPC.Eth.DTOs.TransactionReceipt receipt, long runtime) = r;
+        //        (Nethereum.RPC.Eth.DTOs.string receipt, long runtime) = r;
 
         //        var contract = bec.web3.Eth.GetContract(bec.sampleData.contractAbi, receipt.ContractAddress);
         //        var hashFunc = contract.GetFunction("hashValue");
@@ -90,7 +97,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
                 taskQueue.QueueBackgroundWorkItem((ct) =>
                 {
-                    return bec.DeployContract(hash).ContinueWith(txid => (certEntity.Id, txid));
+                    return bec.DeployContract(accountAddr, password, contractAddr, hash).ContinueWith(txid => (certEntity.Id, txid));
                 });
             }
             return;
@@ -112,7 +119,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //            throw t.Exception;
         //        }
 
-        //        (Nethereum.RPC.Eth.DTOs.TransactionReceipt receipt, long runtime) = t.Result;
+        //        (Nethereum.RPC.Eth.DTOs.string receipt, long runtime) = t.Result;
 
 
         //        var contract = bec.web3.Eth.GetContract(bec.sampleData.contractAbi, receipt.ContractAddress);
