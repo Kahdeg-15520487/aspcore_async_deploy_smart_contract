@@ -35,7 +35,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("BEC service is starting");
+            _logger.LogInformation("BEC receipt polling service is starting");
 
             //the life time loop
             while (!cancellationToken.IsCancellationRequested)
@@ -79,6 +79,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                         //the querry result is here
                         var receipt = await completedTask;
                         _logger.LogInformation($"txId: {receipt}");
+
                         FinishCertificateStatusWithReceipt(id, receipt);
                     }
 
@@ -127,7 +128,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 return;
             }
 
-            //certificate.TransactionId = txId;
+            certificate.ContractAddress = receipt;
             certificate.Status = DeployStatus.DoneQuerrying;
             certificate.QuerryDone = DateTime.UtcNow; repo.Update(certificate);
             repo.Update(certificate);

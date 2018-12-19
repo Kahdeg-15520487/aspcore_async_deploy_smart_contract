@@ -7,7 +7,7 @@ namespace aspcore_async_deploy_smart_contract.Contract.Service
 {
     public interface IBECInterface
     {
-        Task<string> DeployContract(string accountAddress, string pw, string mastercontractaddr, string hash);
-        Task<string> QuerryReceipt(string txId, int waitBeforeEachQuerry = 1000);
+        Task<string> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash);
+        Task<string> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000);
     }
 }

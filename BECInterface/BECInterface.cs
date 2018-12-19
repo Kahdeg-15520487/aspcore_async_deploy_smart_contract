@@ -11,12 +11,16 @@ using System.Threading.Tasks;
 
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using BECInterface.Contracts;
+using Nethereum.Hex.HexTypes;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BECInterface
 {
     public class BECInterface : IBECInterface
     {
         const string hostAddress = "http://10.8.0.1:8545/";
+        const string mastercontractaddr = "0x1A7048CCA5224b5fe68036a8aE5189BcF76f7C09";
 
         public readonly Web3 web3;
         public readonly SampleData sampleData;
@@ -27,19 +31,24 @@ namespace BECInterface
 
             var account = new ManagedAccount(sampleData.sender, sampleData.password);
             //set rpc client timeout to 1 000 000 ms
-            ClientBase.ConnectionTimeout = 1_000_000;
+            ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
             web3 = new Web3(account, sampleData.web3Host);
         }
 
-        public async Task<string> DeployContract(string accountAddress, string pw, string mastercontractaddr, string hash)
+        public async Task<string> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
         {
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
             Web3 w3conn = new Web3(hostAddress);
-            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, account, mastercontractaddr);
-            var firstbyte = "0x" + hash.Substring(0, 64);
-            var lastbyte = "0x" + hash.Substring(64, 64);
 
-            return await contract.SetIndividualCertificate("lala", firstbyte, lastbyte, "0x0800", 2_000_000_000);
+            bool isUnlocked = await w3conn.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
+
+            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, account, mastercontractaddr);
+
+            var sha = new SHA512Managed();
+            var tempBytes = Encoding.UTF8.GetBytes(hash);
+            var hashByte = sha.ComputeHash(tempBytes);
+
+            return await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
             //return await web3.Eth.DeployContract.SendRequestAsync(
             //       sampleData.contractAbi,
             //       sampleData.byteCode,
@@ -50,20 +59,26 @@ namespace BECInterface
             //   );
         }
 
-        public async Task<string> QuerryReceipt(string txId, int waitBeforeEachQuerry = 1000)
+        public async Task<string> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
         {
-            string result = null;
             TransactionReceipt receipt = default(TransactionReceipt);
+            Web3 w3conn = new Web3(hostAddress);
+
+            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, mastercontractaddr);
+
             while (true)
             {
-                receipt = await web3.Eth.Transactions.GetTransactionReceipt
+                receipt = await w3conn.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId);
 
-                var logs = receipt.Logs;
+                var logs = receipt?.Logs;
 
-                if (!string.IsNullOrEmpty(result))
+                if (receipt != null)
                 {
-                    return result;
+                    //var events = await contract.GetCertificationSetEvent(new BlockParameter(receipt.BlockNumber));
+                    var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
+
+                    return certAddress;
                 }
                 else
                 {

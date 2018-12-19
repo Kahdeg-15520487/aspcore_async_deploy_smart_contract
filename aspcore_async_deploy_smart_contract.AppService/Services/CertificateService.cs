@@ -78,13 +78,14 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //    });
         //}
 
-        public void BulkDeployContractWithBackgroundTask(string[] hashs)
+        public void BulkDeployContractWithBackgroundTask(string orgId, string[] hashs)
         {
             foreach (var hash in hashs)
             {
                 var certEntity = new Certificate()
                 {
                     Id = Guid.NewGuid(),
+                    OrganizationId = orgId,
                     DeployStart = DateTime.UtcNow,
                     DeployDone = default(DateTime),
                     Hash = hash,
@@ -97,7 +98,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
                 taskQueue.QueueBackgroundWorkItem((ct) =>
                 {
-                    return bec.DeployContract(accountAddr, password, contractAddr, hash).ContinueWith(txid => (certEntity.Id, txid));
+                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString("N"), orgId, hash).ContinueWith(txid => (certEntity.Id, txid));
                 });
             }
             return;

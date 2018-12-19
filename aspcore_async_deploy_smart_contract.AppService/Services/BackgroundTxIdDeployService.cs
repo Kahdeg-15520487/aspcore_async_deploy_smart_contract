@@ -50,7 +50,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("BEC service is starting");
+            _logger.LogInformation("BEC transaction deploy service is starting");
 
             //the life time loop
             while (!cancellationToken.IsCancellationRequested)
@@ -83,7 +83,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     if (completedTask.IsFaulted)
                     {
                         _logger.LogError("faulted task's id: {0}", completedTask.Id);
-                        _logger.LogError("faulted task's hash: {0}", GetCertificate(id));
+                        _logger.LogError("faulted task's hash: {0}", GetCertificate(id).Hash);
                         _logger.LogError("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
                         //todo report errored hash
                         //maybe try it again later?
@@ -95,11 +95,12 @@ namespace aspcore_async_deploy_smart_contract.AppService
                         var txId = await completedTask;
                         _logger.LogInformation($"txId: {txId}");
                         FinishCertificateStatus(id, txId);
+                        var cert = GetCertificate(id);
 
                         //queue a querry task for this transaction id?
                         QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
                         {
-                            return _bec.QuerryReceipt(txId).ContinueWith(t => (id, t));
+                            return _bec.QuerryReceipt(cert.Id.ToString("N"), cert.OrganizationId, txId).ContinueWith(t => (id, t));
                         });
                     }
 
