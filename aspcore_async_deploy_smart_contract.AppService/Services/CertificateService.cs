@@ -18,19 +18,19 @@ namespace aspcore_async_deploy_smart_contract.AppService
         #region hardcode data
         const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
         const string password = "rosen";
-        const string contractAddr = "0x1A7048CCA5224b5fe68036a8aE5189BcF76f7C09";
+        const string contractAddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
         #endregion
 
 
         private readonly IBECInterface bec;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> taskQueue;
 
         private readonly BECDbContext _context;
         private readonly ILogger _logger;
         private readonly IMapper mapper;
 
-        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
+        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
@@ -101,7 +101,12 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     return bec.DeployContract(accountAddr, password, certEntity.Id.ToString("N"), orgId, hash).ContinueWith(txid => (certEntity.Id, txid));
                 });
             }
-            return;
+        }
+
+        public void DeleteAll()
+        {
+            _context.Certificates.RemoveRange(_context.Certificates);
+            _context.SaveChanges();
         }
 
         //public async Task<string> DeployContract(string hash)

@@ -1,26 +1,30 @@
-﻿using Nethereum.JsonRpc.Client;
-using Nethereum.RPC.Eth.DTOs;
-using Nethereum.Web3;
-using Nethereum.Web3.Accounts.Managed;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text;
+
+using Nethereum.JsonRpc.Client;
+using Nethereum.JsonRpc.WebSocketClient;
+using Nethereum.RPC.Eth.DTOs;
+using Nethereum.Web3;
+using Nethereum.Web3.Accounts.Managed;
+using Nethereum.Hex.HexTypes;
 
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using BECInterface.Contracts;
-using Nethereum.Hex.HexTypes;
-using System.Security.Cryptography;
-using System.Text;
+using aspcore_async_deploy_smart_contract.Contract.DTO;
 
 namespace BECInterface
 {
     public class BECInterface : IBECInterface
     {
         const string hostAddress = "http://10.8.0.1:8545/";
-        const string mastercontractaddr = "0x1A7048CCA5224b5fe68036a8aE5189BcF76f7C09";
+        //const string hostAddress = "ws://10.8.0.1:8546/";
+        const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
 
         public readonly Web3 web3;
         public readonly SampleData sampleData;
@@ -35,10 +39,12 @@ namespace BECInterface
             web3 = new Web3(account, sampleData.web3Host);
         }
 
-        public async Task<string> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
+        public async Task<TransactionId> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
         {
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
-            Web3 w3conn = new Web3(hostAddress);
+            //WebSocketClient client = new WebSocketClient(hostAddress);
+            RpcClient client = new RpcClient(new Uri(hostAddress));
+            Web3 w3conn = new Web3(client);
 
             bool isUnlocked = await w3conn.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
 
@@ -48,7 +54,8 @@ namespace BECInterface
             var tempBytes = Encoding.UTF8.GetBytes(hash);
             var hashByte = sha.ComputeHash(tempBytes);
 
-            return await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
+            var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
+            return new TransactionId(txId);
             //return await web3.Eth.DeployContract.SendRequestAsync(
             //       sampleData.contractAbi,
             //       sampleData.byteCode,
@@ -59,10 +66,12 @@ namespace BECInterface
             //   );
         }
 
-        public async Task<string> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
+        public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-            Web3 w3conn = new Web3(hostAddress);
+            //WebSocketClient client = new WebSocketClient(hostAddress);
+            RpcClient client = new RpcClient(new Uri(hostAddress));
+            Web3 w3conn = new Web3(client);
 
             CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, mastercontractaddr);
 
@@ -78,7 +87,7 @@ namespace BECInterface
                     //var events = await contract.GetCertificationSetEvent(new BlockParameter(receipt.BlockNumber));
                     var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
 
-                    return certAddress;
+                    return new ContractAddress(certAddress);
                 }
                 else
                 {

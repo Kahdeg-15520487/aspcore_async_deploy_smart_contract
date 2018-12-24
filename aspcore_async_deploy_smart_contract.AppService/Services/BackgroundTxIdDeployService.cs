@@ -15,6 +15,7 @@ using aspcore_async_deploy_smart_contract.Dal;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Contract.Repository;
+using aspcore_async_deploy_smart_contract.Contract.DTO;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
@@ -22,14 +23,14 @@ namespace aspcore_async_deploy_smart_contract.AppService
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> DeployContractTaskQueue;
-        private readonly IBackgroundTaskQueue<(Guid id, Task<string> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> DeployContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
         private readonly IBECInterface _bec;
 
-        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<string> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<string> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             _bec = bec;
             DeployContractTaskQueue = deployContractTaskQueue;
@@ -40,18 +41,18 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         public override Task StartAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation("BEC transaction deploy service is starting");
             return base.StartAsync(cancellationToken);
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
+            _logger.LogInformation("BEC transaction deploy service is stopping");
             return base.StopAsync(cancellationToken);
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("BEC transaction deploy service is starting");
-
             //the life time loop
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -59,7 +60,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 int CONCURRENCY_LEVEL = 5;
                 //book keeping variable
                 int nextIndex = 0;
-                List<Task<string>> currentlyRunningTasks = new List<Task<string>>();
+                List<Task<TransactionId>> currentlyRunningTasks = new List<Task<TransactionId>>();
                 Dictionary<int, Guid> TaskTable = new Dictionary<int, Guid>();
 
                 //setup parallel task to run
@@ -93,15 +94,22 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     {
                         //the querry result is here
                         var txId = await completedTask;
-                        _logger.LogInformation($"txId: {txId}");
-                        FinishCertificateStatus(id, txId);
-                        var cert = GetCertificate(id);
-
-                        //queue a querry task for this transaction id?
-                        QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
+                        if (string.IsNullOrEmpty(txId.TxId))
                         {
-                            return _bec.QuerryReceipt(cert.Id.ToString("N"), cert.OrganizationId, txId).ContinueWith(t => (id, t));
-                        });
+                            ErrorCertificateStatue(id, "no txid");
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"txId: {txId}");
+                            FinishCertificateStatus(id, txId.TxId);
+                            var cert = GetCertificate(id);
+
+                            //queue a querry task for this transaction id?
+                            QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
+                            {
+                                return _bec.QuerryReceipt(cert.Id.ToString("N"), cert.OrganizationId, txId.TxId).ContinueWith(t => (id, t));
+                            });
+                        }
                     }
 
                     // queue more task
@@ -115,8 +123,6 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     }
                 }
             }
-
-            _logger.LogInformation("BEC service is stopping");
         }
 
         private void ErrorCertificateStatue(Guid id, string message)

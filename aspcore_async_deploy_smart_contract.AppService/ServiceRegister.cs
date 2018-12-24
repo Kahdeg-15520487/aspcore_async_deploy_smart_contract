@@ -10,6 +10,7 @@ using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.AppService.Repository;
 using BECInterface;
+using aspcore_async_deploy_smart_contract.Contract.DTO;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
@@ -19,9 +20,11 @@ namespace aspcore_async_deploy_smart_contract.AppService
         {
             services.AddHostedService<BackgroundTxIdDeployService>();
             services.AddHostedService<BackgroundReceiptPollingService>();
+            services.AddSingleton<StartupQueueUnfinishedReceiptPollingTask>();
 
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<string> task)>, BackgroundTaskQueue<(Guid id, Task<string> task)>>();
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<string> task)>, BackgroundTaskQueue<(Guid id, Task<string> task)>>();
+            //todo look into the following, it seem to work properly but is it ok
+            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)>, BackgroundTaskQueue<(Guid id, Task<TransactionId> task)>>();
+            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>, BackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
 
             services.AddTransient<IMapper, Mapper>();
             services.AddTransient<ICertificateService, CertificateService>();

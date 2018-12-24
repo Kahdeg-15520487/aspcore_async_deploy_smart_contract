@@ -44,5 +44,13 @@ namespace aspcore_async_deploy_smart_contract.WebApi
             //return Json(txId);
             return Ok();
         }
+
+        [HttpDelete]
+        public IActionResult DeleteAll()
+        {
+            certService.DeleteAll();
+
+            return Ok();
+        }
     }
 }
