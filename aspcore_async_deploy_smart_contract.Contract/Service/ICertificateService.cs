@@ -10,6 +10,6 @@ namespace aspcore_async_deploy_smart_contract.Contract.Service
     {
         IEnumerable<CertificateDTO> GetCertificates();
         CertificateDTO GetCertificate(string txId);
-        void BulkDeployContractWithBackgroundTask(string[] hashList);
+        void BulkDeployContractWithBackgroundTask(string orgId, string[] hashList);
     }
 }

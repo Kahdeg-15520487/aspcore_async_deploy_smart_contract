@@ -10,7 +10,7 @@ using aspcore_async_deploy_smart_contract.Dal;
 namespace aspcore_async_deploy_smart_contract.Dal.Migrations
 {
     [DbContext(typeof(BECDbContext))]
-    [Migration("20181123035739_init")]
+    [Migration("20181224035724_init")]
     partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,6 +26,8 @@ namespace aspcore_async_deploy_smart_contract.Dal.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
 
+                    b.Property<string>("ContractAddress");
+
                     b.Property<DateTime>("DeployDone");
 
                     b.Property<DateTime>("DeployStart");
@@ -33,6 +35,8 @@ namespace aspcore_async_deploy_smart_contract.Dal.Migrations
                     b.Property<string>("Hash");
 
                     b.Property<string>("Messasge");
+
+                    b.Property<string>("OrganizationId");
 
                     b.Property<DateTime>("QuerryDone");
 

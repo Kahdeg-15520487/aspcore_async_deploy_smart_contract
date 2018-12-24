@@ -36,7 +36,7 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         {
             //var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
             //return Json(result);
-            certService.BulkDeployContractWithBackgroundTask(bulkHashRequest.HashList);
+            certService.BulkDeployContractWithBackgroundTask("bobo.inc", bulkHashRequest.HashList);
             return Ok();
         }
     }

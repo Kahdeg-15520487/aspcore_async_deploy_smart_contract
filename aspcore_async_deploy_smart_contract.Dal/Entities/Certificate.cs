@@ -17,6 +17,8 @@ namespace aspcore_async_deploy_smart_contract.Dal.Entities
         public Guid Id { get; set; }
 
         public int TaskId { get; set; }
+        public string OrganizationId { get; set; }
+        public string ContractAddress { get; set; }
 
         public DateTime DeployStart { get; set; }
         public DateTime DeployDone { get; set; }

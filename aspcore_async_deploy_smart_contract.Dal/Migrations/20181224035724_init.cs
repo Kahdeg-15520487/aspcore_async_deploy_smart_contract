@@ -13,6 +13,8 @@ namespace aspcore_async_deploy_smart_contract.Dal.Migrations
                 {
                     Id = table.Column<Guid>(nullable: false),
                     TaskId = table.Column<int>(nullable: false),
+                    OrganizationId = table.Column<string>(nullable: true),
+                    ContractAddress = table.Column<string>(nullable: true),
                     DeployStart = table.Column<DateTime>(nullable: false),
                     DeployDone = table.Column<DateTime>(nullable: false),
                     QuerryDone = table.Column<DateTime>(nullable: false),
