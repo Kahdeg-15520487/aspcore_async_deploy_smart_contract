@@ -6,16 +6,17 @@ namespace aspcore_async_deploy_smart_contract.Contract.DTO
 {
     public class ContractAddress
     {
-        public ContractAddress(string certAddress)
+        public ContractAddress(string certId, string certAddress)
         {
+            CertificateId = certId;
             ContractAddr = certAddress;
         }
 
         public string ContractAddr { get; set; }
-
+        public string CertificateId { get; set; }
         public override string ToString()
         {
-            return ContractAddr;
+            return string.Join(" : ",CertificateId, ContractAddr);
         }
     }
 }

@@ -23,14 +23,14 @@ namespace aspcore_async_deploy_smart_contract.AppService
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> DeployContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> DeployContractTaskQueue;
         private readonly IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
         private readonly IBECInterface _bec;
 
-        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             _bec = bec;
             DeployContractTaskQueue = deployContractTaskQueue;
@@ -60,7 +60,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 int CONCURRENCY_LEVEL = 5;
                 //book keeping variable
                 int nextIndex = 0;
-                List<Task<TransactionId>> currentlyRunningTasks = new List<Task<TransactionId>>();
+                List<Task<TransactionResult>> currentlyRunningTasks = new List<Task<TransactionResult>>();
                 Dictionary<int, Guid> TaskTable = new Dictionary<int, Guid>();
 
                 //setup parallel task to run

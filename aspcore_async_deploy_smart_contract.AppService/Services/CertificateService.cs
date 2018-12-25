@@ -24,13 +24,13 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         private readonly IBECInterface bec;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> taskQueue;
+        private readonly IBackgroundTaskQueue<Task<TransactionResult>> taskQueue;
 
         private readonly BECDbContext _context;
         private readonly ILogger _logger;
         private readonly IMapper mapper;
 
-        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
+        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<Task<TransactionResult>> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
@@ -71,7 +71,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         //        return new ReceiptQuerry()
         //        {
-        //            TransactionId = "",
+        //            TransactionResult = "",
         //            Hash = reHashValue,
         //            DeploymentTime = runtime
         //        };
@@ -98,7 +98,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
                 taskQueue.QueueBackgroundWorkItem((ct) =>
                 {
-                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString("N"), orgId, hash).ContinueWith(txid => (certEntity.Id, txid));
+                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => txid);
                 });
             }
         }
@@ -134,7 +134,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         //        return new ReceiptQuerry()
         //        {
-        //            TransactionId = txId,
+        //            TransactionResult = txId,
         //            Hash = reHashValue,
         //            DeploymentTime = runtime
         //        };

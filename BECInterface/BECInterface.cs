@@ -39,7 +39,7 @@ namespace BECInterface
             web3 = new Web3(account, sampleData.web3Host);
         }
 
-        public async Task<TransactionId> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
+        public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
         {
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
             //WebSocketClient client = new WebSocketClient(hostAddress);
@@ -55,7 +55,7 @@ namespace BECInterface
             var hashByte = sha.ComputeHash(tempBytes);
 
             var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
-            return new TransactionId(txId);
+            return new TransactionResult(certId, txId);
             //return await web3.Eth.DeployContract.SendRequestAsync(
             //       sampleData.contractAbi,
             //       sampleData.byteCode,
@@ -87,7 +87,7 @@ namespace BECInterface
                     //var events = await contract.GetCertificationSetEvent(new BlockParameter(receipt.BlockNumber));
                     var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
 
-                    return new ContractAddress(certAddress);
+                    return new ContractAddress(certId, certAddress);
                 }
                 else
                 {
