@@ -26,7 +26,7 @@ namespace BECInterface
         //const string hostAddress = "ws://10.8.0.1:8546/";
         const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
 
-        public readonly Web3 web3;
+        public readonly Web3 w3conn;
         public readonly SampleData sampleData;
         public IDictionary<string, ManagedAccount> ethereumAccounts;
         public BECInterface()
@@ -36,18 +36,18 @@ namespace BECInterface
             var account = new ManagedAccount(sampleData.sender, sampleData.password);
             //set rpc client timeout to 1 000 000 ms
             ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
-            web3 = new Web3(account, sampleData.web3Host);
+
+            //WebSocketClient client = new WebSocketClient(hostAddress);
+            RpcClient client = new RpcClient(new Uri(hostAddress));
+            w3conn = new Web3(client);
         }
 
         public async Task<TransactionId> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
         {
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
-            //WebSocketClient client = new WebSocketClient(hostAddress);
-            RpcClient client = new RpcClient(new Uri(hostAddress));
-            Web3 w3conn = new Web3(client);
 
             bool isUnlocked = await w3conn.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
-
+            
             CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, account, mastercontractaddr);
 
             var sha = new SHA512Managed();
@@ -56,22 +56,11 @@ namespace BECInterface
 
             var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
             return new TransactionId(txId);
-            //return await web3.Eth.DeployContract.SendRequestAsync(
-            //       sampleData.contractAbi,
-            //       sampleData.byteCode,
-            //       sampleData.sender,
-            //       sampleData.gasLimit,
-            //       null,
-            //       hash
-            //   );
         }
 
         public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-            //WebSocketClient client = new WebSocketClient(hostAddress);
-            RpcClient client = new RpcClient(new Uri(hostAddress));
-            Web3 w3conn = new Web3(client);
 
             CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, mastercontractaddr);
 
@@ -84,7 +73,6 @@ namespace BECInterface
 
                 if (receipt != null)
                 {
-                    //var events = await contract.GetCertificationSetEvent(new BlockParameter(receipt.BlockNumber));
                     var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
 
                     return new ContractAddress(certAddress);
@@ -105,7 +93,7 @@ namespace BECInterface
             (TransactionReceipt receipt, long runtime) result = (null, 0);
             while (true)
             {
-                result = await web3.Eth.Transactions.GetTransactionReceipt
+                result = await w3conn.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId)
                                     .ContinueWith(t =>
                                     {
@@ -153,7 +141,7 @@ namespace BECInterface
                         return;
                     }
 
-                    var contract = web3.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
+                    var contract = w3conn.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
                     var hashFunc = contract.GetFunction("hashValue");
                     var reHashValue = await hashFunc.CallAsync<string>();
 
@@ -213,7 +201,7 @@ namespace BECInterface
 
             while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
             {
-                var t = web3.Eth.DeployContract.SendRequestAsync(
+                var t = w3conn.Eth.DeployContract.SendRequestAsync(
                       sampleData.contractAbi,
                       sampleData.byteCode,
                       sampleData.sender,
@@ -254,7 +242,7 @@ namespace BECInterface
                 //queue another task
                 if (nextIndex < hashs.Count)
                 {
-                    var t = web3.Eth.DeployContract.SendRequestAsync(
+                    var t = w3conn.Eth.DeployContract.SendRequestAsync(
                           sampleData.contractAbi,
                           sampleData.byteCode,
                           sampleData.sender,

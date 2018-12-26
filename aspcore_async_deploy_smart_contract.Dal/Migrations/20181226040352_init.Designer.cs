@@ -10,7 +10,7 @@ using aspcore_async_deploy_smart_contract.Dal;
 namespace aspcore_async_deploy_smart_contract.Dal.Migrations
 {
     [DbContext(typeof(BECDbContext))]
-    [Migration("20181219092955_init")]
+    [Migration("20181226040352_init")]
     partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
