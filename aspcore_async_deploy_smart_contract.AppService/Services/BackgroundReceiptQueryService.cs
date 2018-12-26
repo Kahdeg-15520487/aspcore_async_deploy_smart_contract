@@ -23,7 +23,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         public BackgroundReceiptQueryService(IBackgroundTaskQueue<Task<ContractAddress>> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
-            _logger = loggerFactory.CreateLogger<BackgroundReceiptPollingService>();
+            _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();
             _scopeService = scopeService;
         }
 
