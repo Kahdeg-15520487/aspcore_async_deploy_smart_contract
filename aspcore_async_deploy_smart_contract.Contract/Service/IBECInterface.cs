@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Nethereum.Web3;
 
 namespace aspcore_async_deploy_smart_contract.Contract.Service
 {

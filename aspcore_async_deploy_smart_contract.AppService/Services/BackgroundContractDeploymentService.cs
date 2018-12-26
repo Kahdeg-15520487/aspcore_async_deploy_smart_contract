@@ -8,6 +8,7 @@ using aspcore_async_deploy_smart_contract.Contract.DTO;
 using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace aspcore_async_deploy_smart_contract.AppService.Services
@@ -20,16 +21,17 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         private readonly IBackgroundTaskQueue<Task<ContractAddress>> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
+        public IServiceProvider Services { get; }
 
-        private readonly IBECInterface _bec;
 
-        public BackgroundContractDeploymentService(IBECInterface bec, IBackgroundTaskQueue<Task<TransactionResult>> deployContractTaskQueue, IBackgroundTaskQueue<Task<ContractAddress>> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundContractDeploymentService(IServiceProvider services, IBackgroundTaskQueue<Task<TransactionResult>> deployContractTaskQueue, IBackgroundTaskQueue<Task<ContractAddress>> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
-            _bec = bec;
+            Services = services;
             DeployContractTaskQueue = deployContractTaskQueue;
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundTxIdDeployService>();
             _scopeService = scopeService;
+
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -79,13 +81,20 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                             FinishCertificateStatus(transactionResult.CertificateId, transactionResult.TxId);
 
                             var cert = GetCertificate(transactionResult.CertificateId);
+                            using (var scope = Services.CreateScope())
+                            {
+                                var becInterface =
+                                    scope.ServiceProvider
+                                        .GetRequiredService<IBECInterface>();
 
-                            //queue a querry task for this transaction id?
-                            QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
+                                //queue a querry task for this transaction id?
+                                QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
                                 {
-                                    return _bec.QuerryReceipt(cert.Id.ToString(), cert.OrganizationId,
+                                    return becInterface.QuerryReceipt(cert.Id.ToString(), cert.OrganizationId,
                                         transactionResult.TxId).ContinueWith(t => t);
                                 });
+                            }
+                            
                         }
                     }
                 }

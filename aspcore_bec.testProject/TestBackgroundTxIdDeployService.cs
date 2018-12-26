@@ -16,6 +16,7 @@ using aspcore_async_deploy_smart_contract.AppService;
 using System.Collections.Generic;
 using System.Threading;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
+using Nethereum.Web3;
 
 namespace aspcore_bec.UnitTest
 {
@@ -38,6 +39,7 @@ namespace aspcore_bec.UnitTest
 
             var mockRepo = new Mock<IRepository<Certificate>>();
             var mockLogger = new Mock<ILoggerService>();
+            var mockWeb3 = new Mock<Web3>();
             var mockLoggerFactory = new Mock<ILoggerFactoryService>();
             var mockTxIdQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)>>();
             var mockQuerryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
@@ -117,7 +119,7 @@ namespace aspcore_bec.UnitTest
                             });
             var becObj = mockBECInterface.Object;
 
-            var service = new BackgroundTxIdDeployService(becObj, txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
+            var service = new BackgroundTxIdDeployService(txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
             var taskDoneCount = 0;
             var taskDoneCountShouldBe = hashs.Length;
 

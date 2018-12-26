@@ -30,13 +30,13 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         private readonly IBECInterface _bec;
 
-        public BackgroundTxIdDeployService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundTxIdDeployService(IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
-            _bec = bec;
             DeployContractTaskQueue = deployContractTaskQueue;
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundTxIdDeployService>();
             _scopeService = scopeService;
+            _bec = _scopeService.GetRequiredService<IBECInterface>();
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)

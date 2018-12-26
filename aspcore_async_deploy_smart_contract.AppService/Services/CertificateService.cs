@@ -10,15 +10,17 @@ using aspcore_async_deploy_smart_contract.Contract.DTO;
 using aspcore_async_deploy_smart_contract.Dal;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.Contract.Service;
+using Nethereum.Web3;
+using Nethereum.Web3.Accounts.Managed;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
     public class CertificateService : ICertificateService
     {
         #region hardcode data
-        const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
-        const string password = "rosen";
-        const string contractAddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
+        public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
+        public const string password = "rosen";
+        public const string contractAddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
         #endregion
 
 
@@ -78,9 +80,9 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //    });
         //}
 
-        public void BulkDeployContractWithBackgroundTask(string orgId, string[] hashs)
+        public void BulkDeployContractWithBackgroundTask(string orgId, string[] hashes)
         {
-            foreach (var hash in hashs)
+            foreach (var hash in hashes)
             {
                 var certEntity = new Certificate()
                 {
@@ -95,7 +97,6 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
                 _context.Certificates.Add(certEntity);
                 _context.SaveChanges();
-
                 taskQueue.QueueBackgroundWorkItem((ct) =>
                 {
                     return bec.DeployContract(accountAddr, password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => txid);
