@@ -17,56 +17,65 @@ using Nethereum.Hex.HexTypes;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using BECInterface.Contracts;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
+using Microsoft.Extensions.Logging;
 
 namespace BECInterface
 {
     public class BECInterface : IBECInterface
     {
-        const string hostAddress = "http://10.8.0.1:8545/";
+        public const string hostAddress = "http://10.8.0.1:8545/";
         //const string hostAddress = "ws://10.8.0.1:8546/";
         const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
-
-        public readonly Web3 w3conn;
+		
+        #region hardcode data
+        public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
+        public const string password = "rosen";
+        #endregion
+        private readonly Web3 web3;
+		
         public readonly SampleData sampleData;
         public IDictionary<string, ManagedAccount> ethereumAccounts;
-        public BECInterface()
+
+        private readonly ILoggerService _logger;
+        public BECInterface(ILoggerFactoryService loggerFactory)
         {
             sampleData = new SampleData();
 
-            var account = new ManagedAccount(sampleData.sender, sampleData.password);
+            var account = new ManagedAccount(accountAddr, password);
             //set rpc client timeout to 1 000 000 ms
             ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
 
             //WebSocketClient client = new WebSocketClient(hostAddress);
             RpcClient client = new RpcClient(new Uri(hostAddress));
-            w3conn = new Web3(client);
+            web3 = new Web3(client);
+			
+            _logger = loggerFactory.CreateLogger<IBECInterface>();
         }
 
-        public async Task<TransactionId> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
-        {
+        public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
+        {            
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
-
-            bool isUnlocked = await w3conn.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
-            
-            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, account, mastercontractaddr);
-
+            CertificationRegistryContract contract = new CertificationRegistryContract(web3, account, mastercontractaddr);
+			
             var sha = new SHA512Managed();
             var tempBytes = Encoding.UTF8.GetBytes(hash);
             var hashByte = sha.ComputeHash(tempBytes);
 
             var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
-            return new TransactionId(txId);
+			
+            return new TransactionResult(certId, txId);
         }
 
         public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-
-            CertificationRegistryContract contract = new CertificationRegistryContract(w3conn, mastercontractaddr);
+			
+           
+            CertificationRegistryContract contract = new CertificationRegistryContract(web3, mastercontractaddr);
 
             while (true)
             {
-                receipt = await w3conn.Eth.Transactions.GetTransactionReceipt
+                receipt = await web3.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId);
 
                 var logs = receipt?.Logs;
@@ -75,7 +84,7 @@ namespace BECInterface
                 {
                     var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
 
-                    return new ContractAddress(certAddress);
+                    return new ContractAddress(certId, certAddress);
                 }
                 else
                 {
@@ -93,7 +102,7 @@ namespace BECInterface
             (TransactionReceipt receipt, long runtime) result = (null, 0);
             while (true)
             {
-                result = await w3conn.Eth.Transactions.GetTransactionReceipt
+                result = await web3.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId)
                                     .ContinueWith(t =>
                                     {
@@ -141,7 +150,7 @@ namespace BECInterface
                         return;
                     }
 
-                    var contract = w3conn.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
+                    var contract = web3.Eth.GetContract(sampleData.contractAbi, receipt.ContractAddress);
                     var hashFunc = contract.GetFunction("hashValue");
                     var reHashValue = await hashFunc.CallAsync<string>();
 
@@ -201,7 +210,7 @@ namespace BECInterface
 
             while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
             {
-                var t = w3conn.Eth.DeployContract.SendRequestAsync(
+                var t = web3.Eth.DeployContract.SendRequestAsync(
                       sampleData.contractAbi,
                       sampleData.byteCode,
                       sampleData.sender,
@@ -242,7 +251,7 @@ namespace BECInterface
                 //queue another task
                 if (nextIndex < hashs.Count)
                 {
-                    var t = w3conn.Eth.DeployContract.SendRequestAsync(
+                    var t = web3.Eth.DeployContract.SendRequestAsync(
                           sampleData.contractAbi,
                           sampleData.byteCode,
                           sampleData.sender,

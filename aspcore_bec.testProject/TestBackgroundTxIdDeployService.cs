@@ -16,6 +16,7 @@ using aspcore_async_deploy_smart_contract.AppService;
 using System.Collections.Generic;
 using System.Threading;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
+using Nethereum.Web3;
 
 namespace aspcore_bec.UnitTest
 {
@@ -38,8 +39,9 @@ namespace aspcore_bec.UnitTest
 
             var mockRepo = new Mock<IRepository<Certificate>>();
             var mockLogger = new Mock<ILoggerService>();
+            var mockWeb3 = new Mock<Web3>();
             var mockLoggerFactory = new Mock<ILoggerFactoryService>();
-            var mockTxIdQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)>>();
+            var mockTxIdQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)>>();
             var mockQuerryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
             var mockScopeService = new Mock<IScopeService>();
             var mockBECInterface = new Mock<IBECInterface>();
@@ -56,9 +58,9 @@ namespace aspcore_bec.UnitTest
                             .Returns(loggerObj);
             var loggerFactoryObj = mockLoggerFactory.Object;
 
-            Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionId> task)>>> txidQueue = new Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionId> task)>>>();
-            mockTxIdQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<TransactionId> task)>>>()))
-                        .Callback((Func<CancellationToken, Task<(Guid id, Task<TransactionId> task)>> f) => txidQueue.Enqueue(f));
+            Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionResult> task)>>> txidQueue = new Queue<Func<CancellationToken, Task<(Guid id, Task<TransactionResult> task)>>>();
+            mockTxIdQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<TransactionResult> task)>>>()))
+                        .Callback((Func<CancellationToken, Task<(Guid id, Task<TransactionResult> task)>> f) => txidQueue.Enqueue(f));
             mockTxIdQueue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>()))
                         .ReturnsAsync(() => txidQueue.Dequeue());
             mockTxIdQueue.Setup(q => q.Count)
@@ -107,17 +109,17 @@ namespace aspcore_bec.UnitTest
                             .Returns(async (string accAddr, string pw, string contrAddr, string hash) =>
                             {
                                 await Task.Delay(1000);
-                                return new TransactionId($"lala{hash}");
+                                return new TransactionResult(new Guid().ToString(), $"lala{hash}");
                             });
             mockBECInterface.Setup(b => b.QuerryReceipt(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 1000))
                             .Returns(async (string txid, int delay) =>
                             {
                                 await Task.Delay(delay);
-                                return new ContractAddress( $"lala{txid}");
+                                return new ContractAddress(new Guid().ToString(),  $"lala{txid}");
                             });
             var becObj = mockBECInterface.Object;
 
-            var service = new BackgroundTxIdDeployService(becObj, txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
+            var service = new BackgroundTxIdDeployService(txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
             var taskDoneCount = 0;
             var taskDoneCountShouldBe = hashs.Length;
 
