@@ -17,6 +17,7 @@ using Nethereum.Hex.HexTypes;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using BECInterface.Contracts;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
+using Microsoft.Extensions.Logging;
 
 namespace BECInterface
 {
@@ -32,18 +33,21 @@ namespace BECInterface
         private readonly Web3 web3;
         public readonly SampleData sampleData;
         public IDictionary<string, ManagedAccount> ethereumAccounts;
-        public BECInterface()
+
+        private readonly ILoggerService _logger;
+        public BECInterface(ILoggerFactoryService loggerFactory)
         {
             sampleData = new SampleData();
 
             var account = new ManagedAccount(accountAddr, password);
             //set rpc client timeout to 1 000 000 ms
-
+            _logger = loggerFactory.CreateLogger<IBECInterface>();
             web3 = new Web3(account, hostAddress);
         }
 
         public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
         {
+            
             ManagedAccount account = new ManagedAccount(accountAddress, pw);
             //WebSocketClient client = new WebSocketClient(hostAddress);
             //RpcClient client = new RpcClient(new Uri(hostAddress));
@@ -58,14 +62,6 @@ namespace BECInterface
 
             var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
             return new TransactionResult(certId, txId);
-            //return await web3.Eth.DeployContract.SendRequestAsync(
-            //       sampleData.contractAbi,
-            //       sampleData.byteCode,
-            //       sampleData.sender,
-            //       sampleData.gasLimit,
-            //       null,
-            //       hash
-            //   );
         }
 
         public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
