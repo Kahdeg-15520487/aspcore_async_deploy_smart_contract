@@ -59,7 +59,7 @@ namespace aspcore_async_deploy_smart_contract.Startup
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, StartupQueueUnfinishedReceiptPollingTask startupQueueUnfinishedReceiptPollingTask)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -75,7 +75,7 @@ namespace aspcore_async_deploy_smart_contract.Startup
 
             app.UseCors("CorsPolicy");
 
-            startupQueueUnfinishedReceiptPollingTask.StartAsync(new System.Threading.CancellationToken()).GetAwaiter().GetResult();
+            //startupQueueUnfinishedReceiptPollingTask.StartAsync(new System.Threading.CancellationToken()).GetAwaiter().GetResult();
         }
     }
 }

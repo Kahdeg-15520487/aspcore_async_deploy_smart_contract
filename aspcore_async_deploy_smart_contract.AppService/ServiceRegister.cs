@@ -9,6 +9,7 @@ using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.AppService.Repository;
+using aspcore_async_deploy_smart_contract.AppService.Services;
 using BECInterface;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
 
@@ -18,23 +19,24 @@ namespace aspcore_async_deploy_smart_contract.AppService
     {
         public static IServiceCollection AddService(this IServiceCollection services)
         {
-            services.AddHostedService<BackgroundTxIdDeployService>();
-            services.AddHostedService<BackgroundReceiptPollingService>();
-            services.AddSingleton<StartupQueueUnfinishedReceiptPollingTask>();
+            services.AddHostedService<BackgroundContractDeploymentService>();
+            services.AddHostedService<BackgroundReceiptQueryService>();
+            //services.AddSingleton<StartupQueueUnfinishedReceiptPollingTask>();
 
             //todo look into the following, it seem to work properly but is it ok
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<TransactionId> task)>, BackgroundTaskQueue<(Guid id, Task<TransactionId> task)>>();
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>, BackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
+            services.AddSingleton<IBackgroundTaskQueue<Task<TransactionResult>>, BackgroundTaskQueue<Task<TransactionResult>>>();
+            services.AddSingleton<IBackgroundTaskQueue<Task<ContractAddress>>, BackgroundTaskQueue<Task<ContractAddress>>>();
 
             services.AddTransient<IMapper, Mapper>();
+            services.AddScoped<IBECInterface, BECInterface.BECInterface>();
+
             services.AddTransient<ICertificateService, CertificateService>();
-            services.AddSingleton<IBECInterface, BECInterface.BECInterface>();
 
             services.AddTransient<IRepository<Certificate>, CertificateRepository>();
             services.AddTransient<IScopeService, ScopeService>();
             services.AddSingleton<ILoggerFactoryService, LoggerFactoryService>();
 
-            services.AddBECInterfaceService();
+            //services.AddBECInterfaceService();
 
             return services;
         }
