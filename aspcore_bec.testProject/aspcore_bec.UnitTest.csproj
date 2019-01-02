@@ -18,9 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.AppService\aspcore_async_deploy_smart_contract.AppService.csproj" />
-    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Contract\aspcore_async_deploy_smart_contract.Contract.csproj" />
-    <ProjectReference Include="..\aspcore_async_deploy_smart_contract.Dal\aspcore_async_deploy_smart_contract.Dal.csproj" />
+    <ProjectReference Include="..\aspcore_async_deploy_smart_contract\aspcore_async_deploy_smart_contract.csproj" />
   </ItemGroup>
 
 </Project>

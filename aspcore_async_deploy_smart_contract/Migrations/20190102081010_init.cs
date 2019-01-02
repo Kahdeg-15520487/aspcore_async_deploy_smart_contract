@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace aspcore_async_deploy_smart_contract.Dal.Migrations
+namespace aspcore_async_deploy_smart_contract.Migrations
 {
     public partial class init : Migration
     {

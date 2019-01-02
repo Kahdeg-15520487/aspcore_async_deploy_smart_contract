@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aspcore_async_deploy_smart_contract.Dal;
 
-namespace aspcore_async_deploy_smart_contract.Dal.Migrations
+namespace aspcore_async_deploy_smart_contract.Migrations
 {
     [DbContext(typeof(BECDbContext))]
-    partial class BECDbContextModelSnapshot : ModelSnapshot
+    [Migration("20190102081010_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

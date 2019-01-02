@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 using Nethereum.JsonRpc.Client;
-using Nethereum.JsonRpc.WebSocketClient;
+//using Nethereum.JsonRpc.WebSocketClient;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Web3;
 using Nethereum.Web3.Accounts.Managed;
