@@ -50,7 +50,7 @@ namespace aspcore_async_deploy_smart_contract.Startup
             services.AddService();
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
-            .AddApplicationPart(Assembly.Load("aspcore_async_deploy_smart_contract.WebApi"));
+            .AddApplicationPart(Assembly.Load("aspcore_async_deploy_smart_contract"));
 
             //foreach (var service in services)
             //{
