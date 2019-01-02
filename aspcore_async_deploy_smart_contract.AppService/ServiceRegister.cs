@@ -28,7 +28,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
             services.AddSingleton<IBackgroundTaskQueue<Task<ContractAddress>>, BackgroundTaskQueue<Task<ContractAddress>>>();
 
             services.AddTransient<IMapper, Mapper>();
-            services.AddScoped<IBECInterface, BECInterface.BECInterface>();
+            services.AddSingleton<IBECInterface, BECInterface.BECInterface>();
 
             services.AddTransient<ICertificateService, CertificateService>();
 

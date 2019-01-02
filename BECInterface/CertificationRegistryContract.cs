@@ -23,7 +23,7 @@ namespace BECInterface.Contracts
 
         private readonly Web3 web3;
 
-        private readonly ManagedAccount certAdminAccount;
+        private readonly string certAdminAccountAddress;
 
         private readonly Contract contract;
 
@@ -37,12 +37,12 @@ namespace BECInterface.Contracts
         /// <param name="_contractAddress">master contract address</param>
         public CertificationRegistryContract(
             Web3 _web3Conn,
-            ManagedAccount _certAdminAccount,
+            string _certAdminAccountAddress,
             string _contractAddress)
         {
             web3 = _web3Conn;
 
-            certAdminAccount = _certAdminAccount;
+            certAdminAccountAddress = _certAdminAccountAddress;
 
             contractAddress = _contractAddress;
 
@@ -89,7 +89,7 @@ namespace BECInterface.Contracts
         {
             var thisFunction = contract.GetFunction("setCertificate");
             var deployTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 new HexBigInteger(gasPrice),
                 null,
@@ -128,7 +128,7 @@ namespace BECInterface.Contracts
 
             var thisFunction = contract.GetFunction("setIndividualCertificate");
             var deployTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 new HexBigInteger(gasPrice),
                 null,
@@ -162,7 +162,7 @@ namespace BECInterface.Contracts
 
             var thisFunction = contract.GetFunction("updateIndividualCertificate");
             var deployTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 new HexBigInteger(gasPrice),
                 null,
@@ -187,7 +187,7 @@ namespace BECInterface.Contracts
             }
             var thisFunction = contract.GetFunction("addCertAdmin");
             var addCertAdminTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 null,
                 new object[] { address, organizationId });
@@ -211,7 +211,7 @@ namespace BECInterface.Contracts
             }
             var thisFunction = contract.GetFunction("addRosenCertAdmin");
             var addCertAdminTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 null,
                 new object[] { address, organizationId });
@@ -228,7 +228,7 @@ namespace BECInterface.Contracts
         {
             var thisFunction = contract.GetFunction("delCertAdmin");
             var delAdminTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 null,
                 new object[] { address });
@@ -246,7 +246,7 @@ namespace BECInterface.Contracts
         {
             var thisFunction = contract.GetFunction("delRosenCertAdmin");
             var delAdminTask = thisFunction.SendTransactionAsync(
-                certAdminAccount.Address,
+                certAdminAccountAddress,
                 new HexBigInteger(defaultGasLimit),
                 null,
                 new object[] { address });

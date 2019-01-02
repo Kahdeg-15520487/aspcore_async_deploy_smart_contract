@@ -29,7 +29,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             Services = services;
             DeployContractTaskQueue = deployContractTaskQueue;
             QuerryContractTaskQueue = querryContractTaskQueue;
-            _logger = loggerFactory.CreateLogger<BackgroundTxIdDeployService>();
+            _logger = loggerFactory.CreateLogger<BackgroundContractDeploymentService>();
             _scopeService = scopeService;
 
         }

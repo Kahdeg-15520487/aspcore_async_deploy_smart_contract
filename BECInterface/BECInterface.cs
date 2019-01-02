@@ -26,13 +26,42 @@ namespace BECInterface
         public const string hostAddress = "http://10.8.0.1:8545/";
         //const string hostAddress = "ws://10.8.0.1:8546/";
         const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
-		
+
         #region hardcode data
         public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
         public const string password = "rosen";
         #endregion
-        private readonly Web3 web3;
-		
+        private Web3 _web3;
+
+        private Web3 web3
+        {
+            get
+            {
+                return _web3;
+                if(_web3 == null)
+                {
+                    RpcClient client = new RpcClient(new Uri(hostAddress));
+                    _web3 = new Web3(client);
+                }
+
+                try
+                {
+                    _web3.Eth.Blocks.GetBlockTransactionCountByNumber.SendRequestAsync(BlockParameter.CreateLatest());
+                }
+                catch (RpcClientTimeoutException ex)
+                {
+                    RpcClient client = new RpcClient(new Uri(hostAddress));
+                    _web3 = new Web3(client);
+                    _logger.LogDebug("rpc client created");
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("", ex);
+                }
+                return _web3;
+            }
+        }
+
         public readonly SampleData sampleData;
         public IDictionary<string, ManagedAccount> ethereumAccounts;
 
@@ -47,30 +76,33 @@ namespace BECInterface
 
             //WebSocketClient client = new WebSocketClient(hostAddress);
             RpcClient client = new RpcClient(new Uri(hostAddress));
-            web3 = new Web3(client);
-			
+            _web3 = new Web3(client);
+
             _logger = loggerFactory.CreateLogger<IBECInterface>();
         }
 
         public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
-        {            
-            ManagedAccount account = new ManagedAccount(accountAddress, pw);
-            CertificationRegistryContract contract = new CertificationRegistryContract(web3, account, mastercontractaddr);
-			
+        {
+            /*
+             * Clients retrieve the private key for an account (if stored on their keystore folder) using a password provided to decrypt the file. 
+             * This is done when unlocking an account, or just at the time of sending a transaction if using personal_sendTransaction with a password.
+             */
+            bool isUnlocked = await web3.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
+
+            CertificationRegistryContract contract = new CertificationRegistryContract(web3, accountAddress, mastercontractaddr);
+
             var sha = new SHA512Managed();
             var tempBytes = Encoding.UTF8.GetBytes(hash);
             var hashByte = sha.ComputeHash(tempBytes);
 
             var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
-			
+
             return new TransactionResult(certId, txId);
         }
 
         public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-			
-           
             CertificationRegistryContract contract = new CertificationRegistryContract(web3, mastercontractaddr);
 
             while (true)
