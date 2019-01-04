@@ -16,11 +16,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<Task<ContractAddress>> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
-        public BackgroundReceiptQueryService(IBackgroundTaskQueue<Task<ContractAddress>> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();
@@ -49,17 +49,17 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                     var workItem = await QuerryContractTaskQueue.DequeueAsync(cancellationToken);
                     try
                     {
-                        var task = await workItem(cancellationToken);
+                        var (id, task) = await workItem(cancellationToken);
                         if (task.IsFaulted)
                         {
                             _logger.LogError("faulted task's id: {0}", task.Id);
-                            _logger.LogError("Exception: {0}",
-                                string.Join(Environment.NewLine,
-                                    task.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
+                            //_logger.LogError("Exception: {0}",
+                            //    string.Join(Environment.NewLine,
+                            //        task.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
+                            _logger.LogError("Exception: {0}", task.Exception.ToString());
                             //todo report errored hash
                             //maybe try it again later?
-                           
-
+                            ErrorCertificateStatue(id,task.ToString());
                         }
                         else
                         {
@@ -88,8 +88,13 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
 
         private void ErrorCertificateStatue(string certId, string message)
         {
+            ErrorCertificateStatue(Guid.Parse(certId), message);
+        }
+
+        private void ErrorCertificateStatue(Guid certId, string message)
+        {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var certificate = repo.GetById(Guid.Parse(certId));
+            var certificate = repo.GetById(certId);
             certificate.Status = DeployStatus.ErrorInQuerrying;
             certificate.Messasge = message;
             repo.Update(certificate);

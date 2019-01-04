@@ -17,14 +17,14 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<Task<TransactionResult>> DeployContractTaskQueue;
-        private readonly IBackgroundTaskQueue<Task<ContractAddress>> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> DeployContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
         public IServiceProvider Services { get; }
 
 
-        public BackgroundContractDeploymentService(IServiceProvider services, IBackgroundTaskQueue<Task<TransactionResult>> deployContractTaskQueue, IBackgroundTaskQueue<Task<ContractAddress>> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundContractDeploymentService(IServiceProvider services, IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             Services = services;
             DeployContractTaskQueue = deployContractTaskQueue;
@@ -51,19 +51,20 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             //the life time loop
             while (!cancellationToken.IsCancellationRequested)
             {
-
                 var workItem = await DeployContractTaskQueue.DequeueAsync(cancellationToken);
                 try
                 {
-                    var task = await workItem(cancellationToken);
+                    var (id, task) = await workItem(cancellationToken);
                     if (task.IsFaulted)
                     {
                         _logger.LogError("faulted task's id: {0}", task.Id);
-                        _logger.LogError("Exception: {0}",
-                            string.Join(Environment.NewLine,
-                                task.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
+                        //_logger.LogError("Exception: {0}",
+                        //    string.Join(Environment.NewLine,
+                        //        task.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
+                        _logger.LogError("Exception: {0}", task.Exception.ToString());
                         //todo report errored hash
                         //maybe try it again later?
+                        ErrorCertificateStatue(id, task.ToString());
                     }
                     else
                     {
@@ -91,10 +92,10 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                                 QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) =>
                                 {
                                     return becInterface.QuerryReceipt(cert.Id.ToString(), cert.OrganizationId,
-                                        transactionResult.TxId).ContinueWith(t => t);
+                                        transactionResult.TxId).ContinueWith(t => (id, t));
                                 });
                             }
-                            
+
                         }
                     }
                 }
@@ -105,10 +106,16 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                 }
             }
         }
+
         private void ErrorCertificateStatue(string certId, string message)
         {
+            ErrorCertificateStatue(Guid.Parse(certId), message);
+        }
+
+        private void ErrorCertificateStatue(Guid certId, string message)
+        {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var certificate = repo.GetById(Guid.Parse(certId));
+            var certificate = repo.GetById(certId);
             certificate.Status = DeployStatus.ErrorInDeploy;
             certificate.Messasge = message;
             repo.Update(certificate);
@@ -116,6 +123,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             _logger.LogDebug("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
             _scopeService.Dispose();
         }
+
         private Certificate GetCertificate(string certId)
         {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
@@ -123,6 +131,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             _scopeService.Dispose();
             return cert;
         }
+
         private void FinishCertificateStatus(string certId, string txId)
         {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();

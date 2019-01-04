@@ -26,13 +26,13 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         private readonly IBECInterface bec;
 
-        private readonly IBackgroundTaskQueue<Task<TransactionResult>> taskQueue;
+        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> taskQueue;
 
         private readonly BECDbContext _context;
         private readonly ILogger _logger;
         private readonly IMapper mapper;
 
-        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<Task<TransactionResult>> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
+        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
@@ -93,13 +93,14 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     Hash = hash,
                     Status = DeployStatus.Pending
                 };
-                _logger.LogInformation("Id: {0}, TaskId: {1}, hash: {2}", certEntity.Id, certEntity.TaskId, certEntity.Hash);
+                _logger.LogInformation("Id: {0}, hash: {1}", certEntity.Id, certEntity.Hash);
 
                 _context.Certificates.Add(certEntity);
                 _context.SaveChanges();
+                var id = certEntity.Id;
                 taskQueue.QueueBackgroundWorkItem((ct) =>
                 {
-                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => txid);
+                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => (id, txid));
                 });
             }
         }
