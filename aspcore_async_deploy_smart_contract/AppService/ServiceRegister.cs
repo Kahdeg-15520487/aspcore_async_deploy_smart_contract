@@ -24,8 +24,8 @@ namespace aspcore_async_deploy_smart_contract.AppService
             //services.AddSingleton<StartupQueueUnfinishedReceiptPollingTask>();
 
             //todo look into the following, it seem to work properly but is it ok
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)>, BackgroundTaskQueue<(Guid id, Task<TransactionResult> task)>>();
-            services.AddSingleton<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>, BackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
+            services.AddSingleton<IBackgroundTaskQueue<(string id, Task<TransactionResult> task)>, BackgroundTaskQueue<(string id, Task<TransactionResult> task)>>();
+            services.AddSingleton<IBackgroundTaskQueue<(string id, Task<ContractAddress> task)>, BackgroundTaskQueue<(string id, Task<ContractAddress> task)>>();
 
             services.AddTransient<IMapper, Mapper>();
             services.AddSingleton<IBECInterface, BECInterface.BECInterface>();

@@ -8,6 +8,7 @@ using aspcore_async_deploy_smart_contract.Contract.DTO;
 using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
+using aspcore_async_deploy_smart_contract.Helper;
 using Microsoft.Extensions.Hosting;
 
 namespace aspcore_async_deploy_smart_contract.AppService.Services
@@ -16,11 +17,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
     {
         private readonly ILoggerService _logger;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
-        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();
@@ -41,46 +42,40 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            try
-            {
+            try {
                 //the life time loop
-                while (!cancellationToken.IsCancellationRequested)
-                {
+                while (!cancellationToken.IsCancellationRequested) {
                     var workItem = await QuerryContractTaskQueue.DequeueAsync(cancellationToken);
-                    try
-                    {
+                    try {
                         var (id, task) = await workItem(cancellationToken);
-                        if (task.IsFaulted)
-                        {
+                        if (task.IsFaulted) {
                             _logger.LogError("faulted task's id: {0}", task.Id);
-                            //_logger.LogError("Exception: {0}",
-                            //    string.Join(Environment.NewLine,
-                            //        task.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}:{ex.Message},")));
-                            _logger.LogError("Exception: {0}", task.Exception.ToString());
+                            _logger.LogError("Exception: {0}",
+                                string.Join(Environment.NewLine,
+                                    task.Exception.ToPrettyString()));
+
                             //todo report errored hash
                             //maybe try it again later?
-                            ErrorCertificateStatue(id,task.ToString());
-                        }
-                        else
-                        {
+                            //ErrorCertificateStatue(id,
+                            //    string.Join(Environment.NewLine,
+                            //        task.Exception.ToPrettyString()));
+
+                            
+                        } else {
                             //the query result is here
                             var contractAddress = await task;
                             _logger.LogInformation($"txId: {contractAddress}");
 
                             FinishCertificateStatusWithContractAddress(contractAddress.CertificateId, contractAddress.ContractAddr);
                         }
-                    }
-                    catch (Exception ex)
-                    {
+                    } catch (Exception ex) {
                         _logger.LogError(
                             $"Error occurred executing {nameof(workItem)}.", ex);
                     }
 
 
                 }
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 _logger.LogError(ex.ToString());
             }
             _logger.LogInformation("BEC receipt polling service is ending");
@@ -88,13 +83,8 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
 
         private void ErrorCertificateStatue(string certId, string message)
         {
-            ErrorCertificateStatue(Guid.Parse(certId), message);
-        }
-
-        private void ErrorCertificateStatue(Guid certId, string message)
-        {
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var certificate = repo.GetById(certId);
+            var certificate = repo.GetById(Guid.Parse(certId));
             certificate.Status = DeployStatus.ErrorInQuerrying;
             certificate.Messasge = message;
             repo.Update(certificate);
@@ -116,8 +106,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
             var certificate = repo.GetById(Guid.Parse(certId));
 
-            if (certificate == null)
-            {
+            if (certificate == null) {
                 return;
             }
 

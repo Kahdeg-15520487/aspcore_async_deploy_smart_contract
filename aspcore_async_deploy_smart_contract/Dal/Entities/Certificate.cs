@@ -7,7 +7,7 @@ namespace aspcore_async_deploy_smart_contract.Dal.Entities
     {
         Pending,
         ErrorInDeploy,
-        DoneDeploying,
+        Retrying,
         Querrying,
         ErrorInQuerrying,
         DoneQuerrying

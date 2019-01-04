@@ -17,22 +17,15 @@ namespace aspcore_async_deploy_smart_contract.AppService
 {
     public class CertificateService : ICertificateService
     {
-        #region hardcode data
-        public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
-        public const string password = "rosen";
-        public const string contractAddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
-        #endregion
-
-
         private readonly IBECInterface bec;
 
-        private readonly IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> taskQueue;
+        private readonly IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> taskQueue;
 
         private readonly BECDbContext _context;
         private readonly ILogger _logger;
         private readonly IMapper mapper;
 
-        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
+        public CertificateService(IBECInterface bec, IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> taskQueue, BECDbContext context, ILoggerFactory loggerFactory, IMapper mapper)
         {
             this.bec = bec;
             this.taskQueue = taskQueue;
@@ -51,8 +44,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         {
             var certificate = _context.Certificates.FirstOrDefault(cert => cert.Id.Equals(txId));
 
-            if (certificate == null)
-            {
+            if (certificate == null) {
                 throw new KeyNotFoundException(txId);
             }
 
@@ -82,10 +74,8 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
         public void BulkDeployContractWithBackgroundTask(string orgId, string[] hashes)
         {
-            foreach (var hash in hashes)
-            {
-                var certEntity = new Certificate()
-                {
+            foreach (var hash in hashes) {
+                var certEntity = new Certificate() {
                     Id = Guid.NewGuid(),
                     OrganizationId = orgId,
                     DeployStart = DateTime.UtcNow,
@@ -98,9 +88,8 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 _context.Certificates.Add(certEntity);
                 _context.SaveChanges();
                 var id = certEntity.Id;
-                taskQueue.QueueBackgroundWorkItem((ct) =>
-                {
-                    return bec.DeployContract(accountAddr, password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => (id, txid));
+                taskQueue.QueueBackgroundWorkItem((ct) => {
+                    return bec.DeployContract(HardCodeData.accountAddr, HardCodeData.password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => (id.ToString(), txid));
                 });
             }
         }
