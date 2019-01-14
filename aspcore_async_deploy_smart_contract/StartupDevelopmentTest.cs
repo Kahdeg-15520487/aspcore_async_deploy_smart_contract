@@ -18,21 +18,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace aspcore_async_deploy_smart_contract.Startup
 {
-    public class Startup
+    public class TestConnectionString
     {
-        public Startup(IConfiguration configuration)
+        public string ConnectionString { get; }
+        public TestConnectionString(string connstr)
+        {
+            ConnectionString = connstr;
+        }
+    }
+
+    public class StartupDevelopmentTest
+    {
+        public StartupDevelopmentTest(IConfiguration configuration, TestConnectionString testConnectionString)
         {
             Configuration = configuration;
+            TestConnectionString = testConnectionString;
         }
 
+        private readonly TestConnectionString TestConnectionString;
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             // For development
-            services.AddCors(options =>
-            {
+            services.AddCors(options => {
                 options.AddPolicy("CorsPolicy",
                     builder => builder.AllowAnyOrigin()
                         .AllowAnyMethod()
@@ -40,12 +50,10 @@ namespace aspcore_async_deploy_smart_contract.Startup
                         .AllowCredentials());
             });
 
-            var tttt = Configuration["ConnectionStrings:DefaultConnection"];
-
             services.AddDbContext<BECDbContext>(
                 options => options.UseSqlServer
                         (
-                            Configuration["ConnectionStrings:DefaultConnection"]
+                            TestConnectionString.ConnectionString
                         )
                 );
 
@@ -63,12 +71,9 @@ namespace aspcore_async_deploy_smart_contract.Startup
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
+            if (env.IsDevelopment()) {
                 app.UseDeveloperExceptionPage();
-            }
-            else
-            {
+            } else {
                 app.UseHsts();
             }
 

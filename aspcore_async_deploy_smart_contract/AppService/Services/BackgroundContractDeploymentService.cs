@@ -11,12 +11,13 @@ using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.Helper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace aspcore_async_deploy_smart_contract.AppService.Services
 {
     public class BackgroundContractDeploymentService : BackgroundService
     {
-        private readonly ILoggerService _logger;
+        private readonly ILogger _logger;
 
         private readonly IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> DeployContractTaskQueue;
         private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
@@ -25,7 +26,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         public IServiceProvider Services { get; }
 
 
-        public BackgroundContractDeploymentService(IServiceProvider services, IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundContractDeploymentService(IServiceProvider services, IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> deployContractTaskQueue, IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IScopeService scopeService)
         {
             Services = services;
             DeployContractTaskQueue = deployContractTaskQueue;

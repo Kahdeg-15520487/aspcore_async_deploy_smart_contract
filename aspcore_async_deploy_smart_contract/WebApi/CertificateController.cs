@@ -38,10 +38,11 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody]string hash)
+        public async Task<IActionResult> Post([FromBody]HashRequest hashRequest)
         {
             //var txId = await certService.DeployContract(hash);
             //return Json(txId);
+            certService.BulkDeployContractWithBackgroundTask(hashRequest.OrganizationId, hashRequest.Hash);
             return Ok();
         }
 

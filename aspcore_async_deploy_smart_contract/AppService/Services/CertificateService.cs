@@ -72,7 +72,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //    });
         //}
 
-        public void BulkDeployContractWithBackgroundTask(string orgId, string[] hashes)
+        public void BulkDeployContractWithBackgroundTask(string orgId,params string[] hashes)
         {
             foreach (var hash in hashes) {
                 var certEntity = new Certificate() {

@@ -6,6 +6,9 @@ using aspcore_async_deploy_smart_contract.Contract.Service;
 
 namespace aspcore_async_deploy_smart_contract.AppService
 {
+    /// <summary>
+    /// helper class so that singleton/hosted service can access scoped/transient service
+    /// </summary>
     public class ScopeService : IScopeService
     {
         private readonly IServiceScopeFactory _scopeFactory;

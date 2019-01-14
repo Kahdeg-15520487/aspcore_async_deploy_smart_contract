@@ -34,7 +34,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
 
             services.AddTransient<IRepository<Certificate>, CertificateRepository>();
             services.AddTransient<IScopeService, ScopeService>();
-            services.AddSingleton<ILoggerFactoryService, LoggerFactoryService>();
+            //services.AddSingleton<ILoggerFactoryService, LoggerFactoryService>();
 
             //services.AddBECInterfaceService();
 

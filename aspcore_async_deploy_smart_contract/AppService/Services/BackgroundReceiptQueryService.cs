@@ -10,18 +10,19 @@ using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.Helper;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace aspcore_async_deploy_smart_contract.AppService.Services
 {
     public class BackgroundReceiptQueryService : BackgroundService
     {
-        private readonly ILoggerService _logger;
+        private readonly ILogger _logger;
 
         private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
         private readonly IScopeService _scopeService;
 
-        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactoryService loggerFactory, IScopeService scopeService)
+        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IScopeService scopeService)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();

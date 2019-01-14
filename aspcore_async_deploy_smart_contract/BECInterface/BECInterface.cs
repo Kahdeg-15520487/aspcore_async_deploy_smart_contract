@@ -65,8 +65,8 @@ namespace BECInterface
         public readonly SampleData sampleData;
         public IDictionary<string, ManagedAccount> ethereumAccounts;
 
-        private readonly ILoggerService _logger;
-        public BECInterface(ILoggerFactoryService loggerFactory)
+        private readonly ILogger _logger;
+        public BECInterface(ILoggerFactory loggerFactory)
         {
             sampleData = new SampleData();
 

@@ -17,6 +17,7 @@
 //using System.Threading;
 //using aspcore_async_deploy_smart_contract.Contract.DTO;
 //using Nethereum.Web3;
+//using aspcore_async_deploy_smart_contract.AppService.Services;
 
 //namespace aspcore_bec.UnitTest
 //{
@@ -54,7 +55,7 @@
 //                    .Callback((string s, object[] obj) => output.WriteLine($"dbg : {s}", obj));
 //            var loggerObj = mockLogger.Object;
 
-//            mockLoggerFactory.Setup(lf => lf.CreateLogger<BackgroundTxIdDeployService>())
+//            mockLoggerFactory.Setup(lf => lf.CreateLogger<BackgroundContractDeploymentService>())
 //                            .Returns(loggerObj);
 //            var loggerFactoryObj = mockLoggerFactory.Object;
 
@@ -84,8 +85,7 @@
 //            mockRepo.Setup(rp => rp.Delete(It.IsAny<Certificate>()))
 //                    .Callback((Certificate c) => certificates.RemoveAll(cc => cc.Id.Equals(c.Id)));
 //            mockRepo.Setup(rp => rp.Update(It.IsAny<Certificate>()))
-//                    .Callback((Certificate c) =>
-//                    {
+//                    .Callback((Certificate c) => {
 //                        certificates.RemoveAll(cc => cc.Id.Equals(c.Id));
 //                        certificates.Add(c);
 //                    });
@@ -106,43 +106,37 @@
 //            var scopeObj = mockScopeService.Object;
 
 //            mockBECInterface.Setup(b => b.DeployContract(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-//                            .Returns(async (string accAddr, string pw, string contrAddr, string hash) =>
-//                            {
+//                            .Returns(async (string accAddr, string pw, string contrAddr, string hash) => {
 //                                await Task.Delay(1000);
 //                                return new TransactionResult(new Guid().ToString(), $"lala{hash}");
 //                            });
 //            mockBECInterface.Setup(b => b.QuerryReceipt(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 1000))
-//                            .Returns(async (string txid, int delay) =>
-//                            {
+//                            .Returns(async (string txid, int delay) => {
 //                                await Task.Delay(delay);
-//                                return new ContractAddress(new Guid().ToString(),  $"lala{txid}");
+//                                return new ContractAddress(new Guid().ToString(), $"lala{txid}");
 //                            });
 //            var becObj = mockBECInterface.Object;
 
-//            var service = new BackgroundTxIdDeployService(txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
+//            var service = new BackgroundContractDeploymentService(txidQueueObj, querryQueueObj, loggerFactoryObj, scopeObj);
 //            var taskDoneCount = 0;
 //            var taskDoneCountShouldBe = hashs.Length;
 
-//            foreach (var hash in hashs)
-//            {
-//                var certEntity = new Certificate()
-//                {
+//            foreach (var hash in hashs) {
+//                var certEntity = new Certificate() {
 //                    Id = Guid.NewGuid(),
 //                    DeployStart = DateTime.UtcNow,
 //                    DeployDone = default(DateTime),
 //                    Hash = hash,
 //                    Status = DeployStatus.Pending
 //                };
-//                loggerObj.LogInformation("Id: {0}, TaskId: {1}, hash: {2}", certEntity.Id, certEntity.TaskId, certEntity.Hash);
+//                loggerObj.LogInformation("Id: {0}, hash: {1}", certEntity.Id, certEntity.Hash);
 //                certificates.Add(certEntity);
 
-//                txidQueueObj.QueueBackgroundWorkItem((ct) =>
-//                {
-//                    return becObj.DeployContract(accountAddr, password, "", "", hash).ContinueWith(txid =>
-//                        {
-//                            taskDoneCount++;
-//                            return (certEntity.Id, txid);
-//                        });
+//                txidQueueObj.QueueBackgroundWorkItem((ct) => {
+//                    return becObj.DeployContract(accountAddr, password, "", "", hash).ContinueWith(txid => {
+//                        taskDoneCount++;
+//                        return (certEntity.Id, txid);
+//                    });
 //                });
 //            }
 
@@ -156,8 +150,7 @@
 
 //            Assert.True(true);
 //            Assert.Equal(taskDoneCountShouldBe, querryQueue.Count);
-//            foreach (var cert in certificates)
-//            {
+//            foreach (var cert in certificates) {
 //                output.WriteLine(cert.TransactionId);
 //            }
 //        }
