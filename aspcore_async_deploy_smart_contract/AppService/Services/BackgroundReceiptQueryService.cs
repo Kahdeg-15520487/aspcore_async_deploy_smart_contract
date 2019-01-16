@@ -9,6 +9,7 @@ using aspcore_async_deploy_smart_contract.Contract.Repository;
 using aspcore_async_deploy_smart_contract.Contract.Service;
 using aspcore_async_deploy_smart_contract.Dal.Entities;
 using aspcore_async_deploy_smart_contract.Helper;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -20,13 +21,13 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
 
         private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
 
-        private readonly IScopeService _scopeService;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IScopeService scopeService)
+        public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory)
         {
             QuerryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();
-            _scopeService = scopeService;
+            _scopeFactory = scopeFactory;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -61,7 +62,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                             //    string.Join(Environment.NewLine,
                             //        task.Exception.ToPrettyString()));
 
-                            
+
                         } else {
                             //the query result is here
                             var contractAddress = await task;
@@ -84,40 +85,43 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
 
         private void ErrorCertificateStatue(string certId, string message)
         {
-            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var certificate = repo.GetById(Guid.Parse(certId));
-            certificate.Status = DeployStatus.ErrorInQuerrying;
-            certificate.Messasge = message;
-            repo.Update(certificate);
-            repo.SaveChanges();
-            _logger.LogError("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
-            _scopeService.Dispose();
+            using (var scope = _scopeFactory.CreateScope()) {
+                var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
+                var certificate = repo.GetById(Guid.Parse(certId));
+                certificate.Status = DeployStatus.ErrorInQuerrying;
+                certificate.Messasge = message;
+                repo.Update(certificate);
+                repo.SaveChanges();
+                _logger.LogError("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
+            }
         }
 
         private Certificate GetCertificate(string certId)
         {
-            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var cert = repo.GetById(Guid.Parse(certId));
-            _scopeService.Dispose();
-            return cert;
+            using (var scope = _scopeFactory.CreateScope()) {
+                var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
+                var cert = repo.GetById(Guid.Parse(certId));
+                return cert;
+            }
         }
 
         private void FinishCertificateStatusWithContractAddress(string certId, string receipt)
         {
-            var repo = _scopeService.GetRequiredService<IRepository<Certificate>>();
-            var certificate = repo.GetById(Guid.Parse(certId));
+            using (var scope = _scopeFactory.CreateScope()) {
+                var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
+                var certificate = repo.GetById(Guid.Parse(certId));
 
-            if (certificate == null) {
-                return;
+                if (certificate == null) {
+                    return;
+                }
+
+                certificate.ContractAddress = receipt;
+                certificate.Status = DeployStatus.DoneQuerrying;
+                certificate.QuerryDone = DateTime.UtcNow; repo.Update(certificate);
+                repo.Update(certificate);
+                repo.SaveChanges();
+                _logger.LogInformation("id: {0}, txId: {1}, hash: {2}", certificate.Id, certificate.TransactionId, certificate.Hash);
             }
-
-            certificate.ContractAddress = receipt;
-            certificate.Status = DeployStatus.DoneQuerrying;
-            certificate.QuerryDone = DateTime.UtcNow; repo.Update(certificate);
-            repo.Update(certificate);
-            repo.SaveChanges();
-            _logger.LogInformation("id: {0}, txId: {1}, hash: {2}", certificate.Id, certificate.TransactionId, certificate.Hash);
-            _scopeService.Dispose();
         }
     }
 }
