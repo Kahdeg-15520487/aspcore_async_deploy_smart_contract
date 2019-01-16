@@ -19,13 +19,13 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
     {
         private readonly ILogger _logger;
 
-        private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QueryContractTaskQueue;
 
         private readonly IServiceScopeFactory _scopeFactory;
 
         public BackgroundReceiptQueryService(IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> querryContractTaskQueue, ILoggerFactory loggerFactory, IServiceScopeFactory scopeFactory)
         {
-            QuerryContractTaskQueue = querryContractTaskQueue;
+            QueryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundReceiptQueryService>();
             _scopeFactory = scopeFactory;
         }
@@ -47,7 +47,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             try {
                 //the life time loop
                 while (!cancellationToken.IsCancellationRequested) {
-                    var workItem = await QuerryContractTaskQueue.DequeueAsync(cancellationToken);
+                    var workItem = await QueryContractTaskQueue.DequeueAsync(cancellationToken);
                     try {
                         var (id, task) = await workItem(cancellationToken);
                         if (task.IsFaulted) {
@@ -88,11 +88,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
                 var certificate = repo.GetById(Guid.Parse(certId));
-                certificate.Status = DeployStatus.ErrorInQuerrying;
+                certificate.SmartContractStatus = DeployStatus.ErrorInQuerying;
                 certificate.Messasge = message;
                 repo.Update(certificate);
                 repo.SaveChanges();
-                _logger.LogError("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
+                _logger.LogError("status: {0}, msg: {1}", certificate.SmartContractStatus, certificate.Messasge);
             }
         }
 
@@ -115,9 +115,9 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                     return;
                 }
 
-                certificate.ContractAddress = receipt;
-                certificate.Status = DeployStatus.DoneQuerrying;
-                certificate.QuerryDone = DateTime.UtcNow; repo.Update(certificate);
+                certificate.SmartContractAddress = receipt;
+                certificate.SmartContractStatus = DeployStatus.DoneQuerying;
+                certificate.QueryDone = DateTime.UtcNow; repo.Update(certificate);
                 repo.Update(certificate);
                 repo.SaveChanges();
                 _logger.LogInformation("id: {0}, txId: {1}, hash: {2}", certificate.Id, certificate.TransactionId, certificate.Hash);

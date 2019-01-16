@@ -32,7 +32,7 @@ namespace aspcore_async_deploy_smart_contract.Dal
         {
             //map enum
             modelBuilder.Entity<Certificate>()
-                .Property(e => e.Status)
+                .Property(e => e.SmartContractStatus)
                 .HasMaxLength(50)
                 .HasConversion(
                     v => v.ToString(),

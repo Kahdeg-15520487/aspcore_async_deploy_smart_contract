@@ -51,7 +51,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
             return mapper.Map(certificate);
         }
 
-        //public async Task<IEnumerable<ReceiptQuerry>> BulkDeployContract(string[] hashList)
+        //public async Task<IEnumerable<ReceiptQuery>> BulkDeployContract(string[] hashList)
         //{
         //    var result = await bec.BulkDeployContract(hashList);
 
@@ -63,7 +63,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //        var hashFunc = contract.GetFunction("hashValue");
         //        var reHashValue = hashFunc.CallAsync<string>().Result;
 
-        //        return new ReceiptQuerry()
+        //        return new ReceiptQuery()
         //        {
         //            TransactionResult = "",
         //            Hash = reHashValue,
@@ -72,7 +72,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //    });
         //}
 
-        public void BulkDeployContractWithBackgroundTask(string orgId,params string[] hashes)
+        public void BulkDeployContractWithBackgroundTask(Guid orgId,params string[] hashes)
         {
             foreach (var hash in hashes) {
                 var certEntity = new Certificate() {
@@ -81,7 +81,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                     DeployStart = DateTime.UtcNow,
                     DeployDone = default(DateTime),
                     Hash = hash,
-                    Status = DeployStatus.Pending
+                    SmartContractStatus = DeployStatus.Pending
                 };
                 _logger.LogInformation("Id: {0}, hash: {1}", certEntity.Id, certEntity.Hash);
 
@@ -105,9 +105,9 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //    return await bec.DeployContract(hash);
         //}
 
-        //public async Task<ReceiptQuerry> QuerryContractStatus(string txId)
+        //public async Task<ReceiptQuery> QueryContractStatus(string txId)
         //{
-        //    return await bec.QuerryReceiptWithTxId(txId).ContinueWith(t =>
+        //    return await bec.QueryReceiptWithTxId(txId).ContinueWith(t =>
         //    {
         //        //check for exception
         //        if (t.Status == TaskStatus.Faulted)
@@ -123,7 +123,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
         //        var hashFunc = contract.GetFunction("hashValue");
         //        var reHashValue = hashFunc.CallAsync<string>().Result;
 
-        //        return new ReceiptQuerry()
+        //        return new ReceiptQuery()
         //        {
         //            TransactionResult = txId,
         //            Hash = reHashValue,

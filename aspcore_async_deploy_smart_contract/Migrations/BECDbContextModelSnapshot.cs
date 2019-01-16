@@ -24,8 +24,6 @@ namespace aspcore_async_deploy_smart_contract.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd();
 
-                    b.Property<string>("ContractAddress");
-
                     b.Property<DateTime>("DeployDone");
 
                     b.Property<DateTime>("DeployStart");
@@ -34,11 +32,13 @@ namespace aspcore_async_deploy_smart_contract.Migrations
 
                     b.Property<string>("Messasge");
 
-                    b.Property<string>("OrganizationId");
+                    b.Property<Guid>("OrganizationId");
 
-                    b.Property<DateTime>("QuerryDone");
+                    b.Property<DateTime>("QueryDone");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("SmartContractAddress");
+
+                    b.Property<string>("SmartContractStatus")
                         .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false);

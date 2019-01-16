@@ -18,8 +18,8 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 TransactionId = c.TransactionId,
                 DeployStart = c.DeployStart,
                 DeployDone = c.DeployDone,
-                DeployStatus = c.Status.ToString(),
-                DeployTime = c.Status == DeployStatus.DoneQuerrying ? (long)(c.DeployDone - c.DeployStart).TotalMilliseconds : 0,
+                DeployStatus = c.SmartContractStatus.ToString(),
+                DeployTime = c.SmartContractStatus == DeployStatus.DoneQuerying ? (long)(c.DeployDone - c.DeployStart).TotalMilliseconds : 0,
                 Hash = c.Hash,
                 Message = c.Messasge
             };

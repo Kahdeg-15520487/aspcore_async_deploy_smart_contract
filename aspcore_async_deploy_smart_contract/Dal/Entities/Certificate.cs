@@ -8,9 +8,9 @@ namespace aspcore_async_deploy_smart_contract.Dal.Entities
         Pending,
         ErrorInDeploy,
         Retrying,
-        Querrying,
-        ErrorInQuerrying,
-        DoneQuerrying
+        Querying,
+        ErrorInQuerying,
+        DoneQuerying
     }
 
     public class Certificate
@@ -18,14 +18,15 @@ namespace aspcore_async_deploy_smart_contract.Dal.Entities
         [Key]
         public Guid Id { get; set; }
 
-        public string OrganizationId { get; set; }
-        public string ContractAddress { get; set; }
+        public Guid OrganizationId { get; set; }
+
+        public string SmartContractAddress { get; set; }
 
         public DateTime DeployStart { get; set; }
         public DateTime DeployDone { get; set; }
-        public DateTime QuerryDone { get; set; }
+        public DateTime QueryDone { get; set; }
 
-        public DeployStatus Status { get; set; }
+        public DeployStatus SmartContractStatus { get; set; }
         public string Messasge { get; set; }
 
         public string TransactionId { get; set; }

@@ -20,7 +20,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         private readonly ILogger _logger;
 
         private readonly IBackgroundTaskQueue<(string id, Task<TransactionResult> task)> DeployContractTaskQueue;
-        private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QuerryContractTaskQueue;
+        private readonly IBackgroundTaskQueue<(string id, Task<ContractAddress> task)> QueryContractTaskQueue;
 
         private readonly IServiceScopeFactory _scopeFactory;
         public IServiceProvider Services { get; }
@@ -30,7 +30,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             Services = services;
             DeployContractTaskQueue = deployContractTaskQueue;
-            QuerryContractTaskQueue = querryContractTaskQueue;
+            QueryContractTaskQueue = querryContractTaskQueue;
             _logger = loggerFactory.CreateLogger<BackgroundContractDeploymentService>();
             _scopeFactory = scopeFactory;
         }
@@ -94,8 +94,8 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                                         .GetRequiredService<IBECInterface>();
 
                                 //queue a querry task for this transaction id?
-                                QuerryContractTaskQueue.QueueBackgroundWorkItem((ct) => {
-                                    return bec.QuerryReceipt(cert.Id.ToString(), cert.OrganizationId,
+                                QueryContractTaskQueue.QueueBackgroundWorkItem((ct) => {
+                                    return bec.QueryReceipt(cert.Id.ToString(), cert.OrganizationId,
                                         transactionResult.TxId).ContinueWith(t => (id, t));
                                 });
                             }
@@ -114,11 +114,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
                 var certificate = repo.GetById(Guid.Parse(certId));
-                certificate.Status = DeployStatus.ErrorInDeploy;
+                certificate.SmartContractStatus = DeployStatus.ErrorInDeploy;
                 certificate.Messasge = message;
                 repo.Update(certificate);
                 repo.SaveChanges();
-                _logger.LogDebug("status: {0}, msg: {1}", certificate.Status, certificate.Messasge);
+                _logger.LogDebug("status: {0}, msg: {1}", certificate.SmartContractStatus, certificate.Messasge);
             }
         }
 
@@ -136,7 +136,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
                 var certificate = repo.GetById(Guid.Parse(certId));
-                certificate.Status = deployStatus;
+                certificate.SmartContractStatus = deployStatus;
                 repo.Update(certificate);
                 repo.SaveChanges();
                 _logger.LogInformation("id: {0}, deployStatus: {1}", certificate.Id, deployStatus);
@@ -149,7 +149,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
                 var certificate = repo.GetById(Guid.Parse(certId));
                 certificate.TransactionId = txId;
-                certificate.Status = DeployStatus.Querrying;
+                certificate.SmartContractStatus = DeployStatus.Querying;
                 certificate.DeployDone = DateTime.UtcNow;
                 repo.Update(certificate);
                 repo.SaveChanges();
