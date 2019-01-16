@@ -92,7 +92,7 @@ namespace BECInterface
             var tempBytes = Encoding.UTF8.GetBytes(hash);
             var hashByte = sha.ComputeHash(tempBytes);
 
-            var txId = await contract.SetIndividualCertificate(certId, hashByte, orgId, 2_000_000_000);
+            var txId = await contract.SetIndividualCertificate(hashByte, certId, orgId, 2_000_000_000);
 
             return new TransactionResult(certId, txId);
         }
