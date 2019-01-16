@@ -18,6 +18,7 @@ using aspcore_async_deploy_smart_contract.Contract.Service;
 using BECInterface.Contracts;
 using aspcore_async_deploy_smart_contract.Contract.DTO;
 using Microsoft.Extensions.Logging;
+using aspcore_async_deploy_smart_contract;
 
 namespace BECInterface
 {
@@ -27,10 +28,6 @@ namespace BECInterface
         //const string hostAddress = "ws://10.8.0.1:8546/";
         const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
 
-        #region hardcode data
-        public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";
-        public const string password = "rosen";
-        #endregion
         private Web3 _web3;
 
         private Web3 web3
@@ -70,7 +67,7 @@ namespace BECInterface
         {
             sampleData = new SampleData();
 
-            var account = new ManagedAccount(accountAddr, password);
+            var account = new ManagedAccount(HardCodeData.accountAddr, HardCodeData.password);
             //set rpc client timeout to 1 000 000 ms
             ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
 
