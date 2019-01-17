@@ -73,7 +73,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                                 scope.ServiceProvider
                                     .GetRequiredService<IBECInterface>();
                             DeployContractTaskQueue.QueueBackgroundWorkItem((ct) => {
-                                return bec.DeployContract(HardCodeData.accountAddr, HardCodeData.password, id.ToString(), cert.OrganizationId, cert.Hash).ContinueWith(txid => (id.ToString(), txid));
+                                return bec.DeployContract(EthConnectionData.accountAddr, EthConnectionData.password, id.ToString(), cert.OrganizationId, cert.Hash).ContinueWith(txid => (id.ToString(), txid));
                             });
                         }
 

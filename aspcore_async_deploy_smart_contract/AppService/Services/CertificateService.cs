@@ -89,7 +89,7 @@ namespace aspcore_async_deploy_smart_contract.AppService
                 _context.SaveChanges();
                 var id = certEntity.Id;
                 taskQueue.QueueBackgroundWorkItem((ct) => {
-                    return bec.DeployContract(HardCodeData.accountAddr, HardCodeData.password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => (id.ToString(), txid));
+                    return bec.DeployContract(EthConnectionData.accountAddr, EthConnectionData.password, certEntity.Id.ToString(), orgId, hash).ContinueWith(txid => (id.ToString(), txid));
                 });
             }
         }

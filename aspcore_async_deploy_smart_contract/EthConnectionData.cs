@@ -3,7 +3,7 @@
     /// <summary>
     /// stand-in for future config based eth connection information
     /// </summary>
-    public class HardCodeData
+    public class EthConnectionData
     {
         #region hardcode data
         public const string accountAddr = "0x3382EfBCFA02461560cABD69530a6172255e8A67";

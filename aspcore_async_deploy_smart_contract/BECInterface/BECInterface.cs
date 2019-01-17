@@ -28,12 +28,12 @@ namespace BECInterface
         public BECInterface(ILoggerFactory loggerFactory)
         {
             //todo replace this with configurable value read from config file
-            var account = new ManagedAccount(HardCodeData.accountAddr, HardCodeData.password);
+            var account = new ManagedAccount(EthConnectionData.accountAddr, EthConnectionData.password);
             //set rpc client timeout to 1 000 000 ms
             ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
 
             //WebSocketClient client = new WebSocketClient(hostAddress);
-            RpcClient client = new RpcClient(new Uri(HardCodeData.hostAddress));
+            RpcClient client = new RpcClient(new Uri(EthConnectionData.hostAddress));
             _web3 = new Web3(client);
 
             _logger = loggerFactory.CreateLogger<IBECInterface>();
@@ -47,7 +47,7 @@ namespace BECInterface
              */
             bool isUnlocked = await _web3.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
 
-            CertificationRegistryContract contract = new CertificationRegistryContract(_web3, accountAddress, HardCodeData.mastercontractaddr);
+            CertificationRegistryContract contract = new CertificationRegistryContract(_web3, accountAddress, EthConnectionData.mastercontractaddr);
 
             var sha = new SHA512Managed();
             var tempBytes = Encoding.UTF8.GetBytes(hash);
@@ -62,7 +62,7 @@ namespace BECInterface
         public async Task<ContractAddress> QueryReceipt(string certId, Guid orgId, string txId, int waitBeforeEachQuery = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-            CertificationRegistryContract contract = new CertificationRegistryContract(_web3, HardCodeData.mastercontractaddr);
+            CertificationRegistryContract contract = new CertificationRegistryContract(_web3, EthConnectionData.mastercontractaddr);
 
             while (true) {
                 receipt = await _web3.Eth.Transactions.GetTransactionReceipt
