@@ -37,7 +37,7 @@ namespace aspcore_bec.IntegrationTest
         }
 
         [Theory]
-        [InlineData("", 49998)]
+        [InlineData("", 49997)]
         public void PostCertificate(string hash, int port)
         {
             controller = new BaseController(port);
@@ -53,7 +53,8 @@ namespace aspcore_bec.IntegrationTest
                 }
 
                 {
-                    HttpResponseMessage result = client.PostAsJsonAsync("api/certificate", new HashRequest { OrganizationId = "bobo.inc", Hash = hash })
+                    //todo ask henry chuong about orgId on blockchain
+                    HttpResponseMessage result = client.PostAsJsonAsync("api/certificate", new HashRequest { OrganizationId = Guid.NewGuid(), Hash = hash })
                                                 .GetAwaiter().GetResult();
                     var content = result.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     _output.WriteLine(content);
@@ -73,7 +74,7 @@ namespace aspcore_bec.IntegrationTest
                         CertificateDTO[] certs = JsonConvert.DeserializeObject<CertificateDTO[]>(content);
                         if (certs.Length > 0) {
                             var cert = certs[0];
-                            isSuccess = cert.DeployStatus == DeployStatus.DoneQuerrying.ToString();
+                            isSuccess = cert.DeployStatus == DeployStatus.DoneQuerying.ToString();
                             _output.WriteLine(cert.DeployStatus + "  " + isSuccess);
                         }
                     } while (!isSuccess);

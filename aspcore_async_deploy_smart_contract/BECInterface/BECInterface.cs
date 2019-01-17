@@ -26,33 +26,25 @@ namespace BECInterface
     {
         public const string hostAddress = "http://10.8.0.1:8545/";
         //const string hostAddress = "ws://10.8.0.1:8546/";
-        const string mastercontractaddr = "0xA33f324663bB628fdeFb13EeabB624595cbc4808";
 
         private Web3 _web3;
 
-        private Web3 web3
-        {
-            get
-            {
+        private Web3 web3 {
+            get {
                 return _web3;
-                if(_web3 == null)
-                {
+                //todo below is an attempt to check for web3 client liveness
+                if (_web3 == null) {
                     RpcClient client = new RpcClient(new Uri(hostAddress));
                     _web3 = new Web3(client);
                 }
 
-                try
-                {
+                try {
                     _web3.Eth.Blocks.GetBlockTransactionCountByNumber.SendRequestAsync(BlockParameter.CreateLatest());
-                }
-                catch (RpcClientTimeoutException ex)
-                {
+                } catch (RpcClientTimeoutException ex) {
                     RpcClient client = new RpcClient(new Uri(hostAddress));
                     _web3 = new Web3(client);
                     _logger.LogDebug("rpc client created");
-                }
-                catch (Exception ex)
-                {
+                } catch (Exception ex) {
                     throw new Exception("", ex);
                 }
                 return _web3;
@@ -67,6 +59,7 @@ namespace BECInterface
         {
             sampleData = new SampleData();
 
+            //todo replace this with configurable value read from config file
             var account = new ManagedAccount(HardCodeData.accountAddr, HardCodeData.password);
             //set rpc client timeout to 1 000 000 ms
             ClientBase.ConnectionTimeout = new TimeSpan(0, 0, 0, 1_000_000);
@@ -78,7 +71,7 @@ namespace BECInterface
             _logger = loggerFactory.CreateLogger<IBECInterface>();
         }
 
-        public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, string orgId, string hash)
+        public async Task<TransactionResult> DeployContract(string accountAddress, string pw, string certId, Guid orgId, string hash)
         {
             /*
              * Clients retrieve the private key for an account (if stored on their keystore folder) using a password provided to decrypt the file. 
@@ -86,95 +79,83 @@ namespace BECInterface
              */
             bool isUnlocked = await web3.Personal.UnlockAccount.SendRequestAsync(accountAddress, pw, 60);
 
-            CertificationRegistryContract contract = new CertificationRegistryContract(web3, accountAddress, mastercontractaddr);
+            CertificationRegistryContract contract = new CertificationRegistryContract(web3, accountAddress, HardCodeData.mastercontractaddr);
 
             var sha = new SHA512Managed();
             var tempBytes = Encoding.UTF8.GetBytes(hash);
             var hashByte = sha.ComputeHash(tempBytes);
 
-            var txId = await contract.SetIndividualCertificate(hashByte, certId, orgId, 2_000_000_000);
+            //todo ask henry chuong about orgId on blockchain
+            var txId = await contract.SetIndividualCertificate(hashByte, certId, orgId.ToString("N"), 2_000_000_000);
 
             return new TransactionResult(certId, txId);
         }
 
-        public async Task<ContractAddress> QuerryReceipt(string certId, string orgId, string txId, int waitBeforeEachQuerry = 1000)
+        public async Task<ContractAddress> QueryReceipt(string certId, Guid orgId, string txId, int waitBeforeEachQuery = 1000)
         {
             TransactionReceipt receipt = default(TransactionReceipt);
-            CertificationRegistryContract contract = new CertificationRegistryContract(web3, mastercontractaddr);
+            CertificationRegistryContract contract = new CertificationRegistryContract(web3, HardCodeData.mastercontractaddr);
 
-            while (true)
-            {
+            while (true) {
                 receipt = await web3.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId);
 
                 var logs = receipt?.Logs;
 
-                if (receipt != null)
-                {
-                    var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId);
+                if (receipt != null) {
+                    //todo ask henry chuong about orgId on blockchain
+                    var certAddress = await contract.GetCertAddressByIdAsync(certId, orgId.ToString("N"));
 
                     return new ContractAddress(certId, certAddress);
-                }
-                else
-                {
-                    await Task.Delay(waitBeforeEachQuerry);
+                } else {
+                    await Task.Delay(waitBeforeEachQuery);
                 }
             }
         }
 
         [Obsolete]
-        public async Task<(TransactionReceipt receipt, long runtime)> QuerryReceiptWithTxId(string txId, int waitBeforeEachQuerry = 1000, IProgress<(TransactionReceipt receipt, long runtime)> progress = null)
+        public async Task<(TransactionReceipt receipt, long runtime)> QueryReceiptWithTxId(string txId, int waitBeforeEachQuery = 1000, IProgress<(TransactionReceipt receipt, long runtime)> progress = null)
         {
             var timer = new Stopwatch();
             timer.Start();
 
             (TransactionReceipt receipt, long runtime) result = (null, 0);
-            while (true)
-            {
+            while (true) {
                 result = await web3.Eth.Transactions.GetTransactionReceipt
                                     .SendRequestAsync(txId)
-                                    .ContinueWith(t =>
-                                    {
+                                    .ContinueWith(t => {
                                         //todo handle exception here
                                         //there can be rpc connection error when 
                                         //somehow the geth instance is inaccessible
-                                        try
-                                        {
+                                        try {
                                             var receipt = t.Result;
                                             var runtime = timer.ElapsedMilliseconds;
                                             return (receipt, runtime);
-                                        }
-                                        catch (Exception)
-                                        {
+                                        } catch (Exception) {
                                             throw;
                                         }
                                     });
 
-                if (result.receipt != null)
-                {
+                if (result.receipt != null) {
                     timer.Stop();
                     progress?.Report(result);
                     return result;
-                }
-                else
-                {
-                    await Task.Delay(waitBeforeEachQuerry);
+                } else {
+                    await Task.Delay(waitBeforeEachQuery);
                 }
             }
         }
 
         [Obsolete]
-        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList, int waitBeforeEachQuerry = 1000)
+        public async Task<(TransactionReceipt receipt, long runTime)[]> BulkDeployContract(IEnumerable<string> hashList, int waitBeforeEachQuery = 1000)
         {
             List<(TransactionReceipt receipt, long runTime)> result = new List<(TransactionReceipt receipt, long runTime)>();
             IProgress<(TransactionReceipt receipt, long runtime)> receiptProgress =
-                new Progress<(TransactionReceipt receipt, long runtime)>(async (value) =>
-                {
+                new Progress<(TransactionReceipt receipt, long runtime)>(async (value) => {
                     var (receipt, runtime) = value;
 
                     //check null receipt
-                    if (receipt is null)
-                    {
+                    if (receipt is null) {
                         Console.WriteLine("null");
                         return;
                     }
@@ -189,10 +170,9 @@ namespace BECInterface
                 });
 
             IProgress<string> txIdProgress =
-                new Progress<string>(async (txId) =>
-                {
+                new Progress<string>(async (txId) => {
                     Console.WriteLine($"txId: {txId}");
-                    //var value = await QuerryReceiptWithTxId(txId, waitBeforeEachQuerry);
+                    //var value = await QueryReceiptWithTxId(txId, waitBeforeEachQuery);
 
                     //this IProgress approach:
                     // after each and every txid querried, start a receipt polling task
@@ -203,17 +183,13 @@ namespace BECInterface
 
 
 
-            var reciptPollingTasks = txIds.Select(txId =>
-            {
-                return QuerryReceiptWithTxId(txId, waitBeforeEachQuerry, progress: receiptProgress);
+            var reciptPollingTasks = txIds.Select(txId => {
+                return QueryReceiptWithTxId(txId, waitBeforeEachQuery, progress: receiptProgress);
             }).ToArray();
 
-            try
-            {
+            try {
                 Task.WaitAll(reciptPollingTasks);
-            }
-            catch (AggregateException aex)
-            {
+            } catch (AggregateException aex) {
                 //todo handle exception in querry polling
             }
 
@@ -237,8 +213,7 @@ namespace BECInterface
 
             Dictionary<int, string> taskHashlist = new Dictionary<int, string>();
 
-            while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count())
-            {
+            while (nextIndex < CONCURRENCY_LEVEL && nextIndex < hashs.Count()) {
                 var t = web3.Eth.DeployContract.SendRequestAsync(
                       sampleData.contractAbi,
                       sampleData.byteCode,
@@ -252,8 +227,7 @@ namespace BECInterface
                 nextIndex++;
             }
 
-            while (txIdTasks.Count > 0)
-            {
+            while (txIdTasks.Count > 0) {
                 //get the first completed task in the task list
                 var completedTask = await Task.WhenAny(txIdTasks);
                 //remove it from the task list
@@ -261,16 +235,13 @@ namespace BECInterface
                 var hash = taskHashlist[completedTask.Id];
                 taskHashlist.Remove(completedTask.Id);
 
-                if (completedTask.IsFaulted)
-                {
+                if (completedTask.IsFaulted) {
                     Console.WriteLine("faulted task's id: {0}", completedTask.Id);
                     Console.WriteLine("faulted task's hash: {0}", hash);
                     Console.WriteLine("Exception: {0}", string.Join(Environment.NewLine, completedTask.Exception.InnerExceptions.Select(ex => $"{ex.GetType().Name}{ex.Message}")));
                     //todo report errored hash
                     //maybe try it again later?
-                }
-                else
-                {
+                } else {
                     //the querry result is here, maybe implement some kind of INotifier
                     var txId = await completedTask;
                     progress?.Report(txId);
@@ -278,8 +249,7 @@ namespace BECInterface
                 }
 
                 //queue another task
-                if (nextIndex < hashs.Count)
-                {
+                if (nextIndex < hashs.Count) {
                     var t = web3.Eth.DeployContract.SendRequestAsync(
                           sampleData.contractAbi,
                           sampleData.byteCode,

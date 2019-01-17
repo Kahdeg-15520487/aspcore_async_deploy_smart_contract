@@ -43,7 +43,7 @@
 //            var mockWeb3 = new Mock<Web3>();
 //            var mockLoggerFactory = new Mock<ILoggerFactoryService>();
 //            var mockTxIdQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<TransactionResult> task)>>();
-//            var mockQuerryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
+//            var mockQueryQueue = new Mock<IBackgroundTaskQueue<(Guid id, Task<ContractAddress> task)>>();
 //            var mockScopeService = new Mock<IScopeService>();
 //            var mockBECInterface = new Mock<IBECInterface>();
 
@@ -69,13 +69,13 @@
 //            var txidQueueObj = mockTxIdQueue.Object;
 
 //            Queue<Func<CancellationToken, Task<(Guid id, Task<ContractAddress> task)>>> querryQueue = new Queue<Func<CancellationToken, Task<(Guid id, Task<ContractAddress> task)>>>();
-//            mockQuerryQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<ContractAddress> task)>>>()))
+//            mockQueryQueue.Setup(q => q.QueueBackgroundWorkItem(It.IsAny<Func<CancellationToken, Task<(Guid id, Task<ContractAddress> task)>>>()))
 //                        .Callback((Func<CancellationToken, Task<(Guid id, Task<ContractAddress> task)>> f) => querryQueue.Enqueue(f));
-//            mockQuerryQueue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>()))
+//            mockQueryQueue.Setup(q => q.DequeueAsync(It.IsAny<CancellationToken>()))
 //                        .ReturnsAsync(() => querryQueue.Dequeue());
-//            mockQuerryQueue.Setup(q => q.Count)
+//            mockQueryQueue.Setup(q => q.Count)
 //                        .Returns(() => querryQueue.Count);
-//            var querryQueueObj = mockQuerryQueue.Object;
+//            var querryQueueObj = mockQueryQueue.Object;
 
 //            List<Certificate> certificates = new List<Certificate>();
 //            mockRepo.Setup(rp => rp.Insert(It.IsAny<Certificate>()))
@@ -110,7 +110,7 @@
 //                                await Task.Delay(1000);
 //                                return new TransactionResult(new Guid().ToString(), $"lala{hash}");
 //                            });
-//            mockBECInterface.Setup(b => b.QuerryReceipt(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 1000))
+//            mockBECInterface.Setup(b => b.QueryReceipt(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), 1000))
 //                            .Returns(async (string txid, int delay) => {
 //                                await Task.Delay(delay);
 //                                return new ContractAddress(new Guid().ToString(), $"lala{txid}");

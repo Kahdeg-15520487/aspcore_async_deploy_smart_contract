@@ -36,7 +36,8 @@ namespace aspcore_async_deploy_smart_contract.WebApi
         {
             //var result = await certService.BulkDeployContract(bulkHashRequest.HashList);
             //return Json(result);
-            certService.BulkDeployContractWithBackgroundTask("bobo.inc",bulkHashRequest.HashList);
+            //todo ask henry chuong about orgId on blockchain
+            certService.BulkDeployContractWithBackgroundTask(Guid.NewGuid(), bulkHashRequest.HashList);
             return Ok();
         }
     }

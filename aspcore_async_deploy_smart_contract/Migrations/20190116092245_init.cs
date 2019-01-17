@@ -12,12 +12,12 @@ namespace aspcore_async_deploy_smart_contract.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(nullable: false),
-                    OrganizationId = table.Column<string>(nullable: true),
-                    ContractAddress = table.Column<string>(nullable: true),
+                    OrganizationId = table.Column<Guid>(nullable: false),
+                    SmartContractAddress = table.Column<string>(nullable: true),
                     DeployStart = table.Column<DateTime>(nullable: false),
                     DeployDone = table.Column<DateTime>(nullable: false),
-                    QuerryDone = table.Column<DateTime>(nullable: false),
-                    Status = table.Column<string>(unicode: false, maxLength: 50, nullable: false),
+                    QueryDone = table.Column<DateTime>(nullable: false),
+                    SmartContractStatus = table.Column<string>(unicode: false, maxLength: 50, nullable: false),
                     Messasge = table.Column<string>(nullable: true),
                     TransactionId = table.Column<string>(nullable: true),
                     Hash = table.Column<string>(nullable: true)

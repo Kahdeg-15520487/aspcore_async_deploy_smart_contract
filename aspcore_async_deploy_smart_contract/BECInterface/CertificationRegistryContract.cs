@@ -121,7 +121,7 @@ namespace BECInterface.Contracts
                 new HexBigInteger(defaultGasLimit),
                 new HexBigInteger(gasPrice),
                 null,
-                new object[] { certId, firstBytes32, lastBytes32, organizationId });
+                new object[] { firstBytes32, lastBytes32, certId, organizationId });
             return deployTask;
         }
 
@@ -151,7 +151,7 @@ namespace BECInterface.Contracts
                 new HexBigInteger(defaultGasLimit),
                 new HexBigInteger(gasPrice),
                 null,
-                new object[] { certId, firstBytes32, lastBytes32, organizationId });
+                new object[] { firstBytes32, lastBytes32, certId, organizationId });
             return deployTask;
         }
 
