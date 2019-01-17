@@ -114,11 +114,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
                 certificate.SmartContractStatus = DeployStatus.ErrorInDeploy;
                 certificate.Messasge = message;
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogDebug("status: {0}, msg: {1}", certificate.SmartContractStatus, certificate.Messasge);
             }
         }
@@ -127,7 +127,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var cert = repo.GetById(Guid.Parse(certId));
+                var cert = repo.GetCertificate(Guid.Parse(certId));
                 return cert;
             }
         }
@@ -136,10 +136,10 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
                 certificate.SmartContractStatus = deployStatus;
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogInformation("id: {0}, deployStatus: {1}", certificate.Id, deployStatus);
             }
         }
@@ -148,10 +148,10 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
                 certificate.Messasge = msg;
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogInformation("id: {0}, msg: {1}", certificate.Id, msg);
             }
         }
@@ -160,12 +160,12 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
                 certificate.TransactionId = txId;
                 certificate.SmartContractStatus = DeployStatus.Querying;
                 certificate.DeployDone = DateTime.UtcNow;
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogInformation("id: {0}, txId: {1}", certificate.Id, txId);
             }
         }

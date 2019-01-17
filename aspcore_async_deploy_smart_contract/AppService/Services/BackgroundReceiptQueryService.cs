@@ -87,11 +87,11 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
                 certificate.SmartContractStatus = DeployStatus.ErrorInQuerying;
                 certificate.Messasge = message;
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogError("status: {0}, msg: {1}", certificate.SmartContractStatus, certificate.Messasge);
             }
         }
@@ -100,7 +100,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var cert = repo.GetById(Guid.Parse(certId));
+                var cert = repo.GetCertificate(Guid.Parse(certId));
                 return cert;
             }
         }
@@ -109,7 +109,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
         {
             using (var scope = _scopeFactory.CreateScope()) {
                 var repo = scope.ServiceProvider.GetRequiredService<IRepository<Certificate>>();
-                var certificate = repo.GetById(Guid.Parse(certId));
+                var certificate = repo.GetCertificate(Guid.Parse(certId));
 
                 if (certificate == null) {
                     return;
@@ -119,7 +119,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Services
                 certificate.SmartContractStatus = DeployStatus.DoneQuerying;
                 certificate.QueryDone = DateTime.UtcNow; repo.Update(certificate);
                 repo.Update(certificate);
-                repo.SaveChanges();
+                repo.Save();
                 _logger.LogInformation("id: {0}, txId: {1}, hash: {2}", certificate.Id, certificate.TransactionId, certificate.Hash);
             }
         }

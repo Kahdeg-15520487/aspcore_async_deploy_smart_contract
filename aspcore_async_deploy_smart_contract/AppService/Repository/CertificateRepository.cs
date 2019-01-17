@@ -21,12 +21,12 @@ namespace aspcore_async_deploy_smart_contract.AppService.Repository
             _dbContext = dbContext;
         }
 
-        public Certificate GetById(Guid id)
+        public Certificate GetCertificate(Guid id)
         {
             return _dbContext.Certificates.Find(id);
         }
 
-        public IEnumerable<Certificate> List()
+        public IEnumerable<Certificate> GetListCertificates()
         {
             return _dbContext.Certificates.AsEnumerable();
         }
@@ -53,7 +53,7 @@ namespace aspcore_async_deploy_smart_contract.AppService.Repository
             _dbContext.Certificates.Remove(entity);
         }
 
-        public int SaveChanges()
+        public int Save()
         {
             return _dbContext.SaveChanges();
         }
